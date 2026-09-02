@@ -70,8 +70,17 @@ jobs:
             -destination 'generic/platform=iOS' \
             -configuration Release \
             -archivePath build/archive/Aptus.xcarchive \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
+            -allowProvisioningUpdates \
+            -authenticationKeyID 38F6WA87DU \
+            -authenticationKeyIssuerID 73c7355a-beef-4d79-919d-c3d7dec7747a \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_38F6WA87DU.p8
+
+      - name: 🔍 Verify Entitlements in Archive
+        run: |
+          echo "=== iOS App Entitlements ==="
+          codesign -d --entitlements :- build/archive/Aptus.xcarchive/Products/Applications/Aptus.app || true
+          echo "=== Watch App Entitlements ==="
+          codesign -d --entitlements :- "build/archive/Aptus.xcarchive/Products/Applications/Aptus.app/Watch/Aptus Watch App.app" || true
 
       - name: 📤 Export & Deliver to App Store Connect via Apple Direct Upload
         run: |
