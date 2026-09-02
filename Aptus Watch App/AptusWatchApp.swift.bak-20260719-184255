@@ -1,0 +1,22 @@
+//
+//  AptusWatchApp.swift
+//  Aptus Watch App
+//
+
+import SwiftUI
+
+@main
+struct AptusWatchApp: App {
+    // Activate the WatchConnectivity bridge so the Watch can push live biometrics
+    // to the Phone and receive coaching guidance back.
+    init() {
+        ConnectivityManager.shared.activate()
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            WatchWorkoutTelemetryView()
+                .environmentObject(ConnectivityManager.shared)
+        }
+    }
+}

@@ -1,0 +1,144 @@
+//
+//  WatchWorkoutTelemetryView.swift
+//  Aptus Watch App
+//
+//  Created by WatchOS Biometric Streams
+//
+
+import SwiftUI
+import HealthKit
+
+struct WatchWorkoutTelemetryView: View {
+    // Coaching guidance received from the iPhone over WatchConnectivity.
+    @EnvironmentObject private var connector: ConnectivityManager
+    // The live HealthKit workout session that streams real heart rate.
+    @StateObject private var workout = WorkoutManager()
+
+    var body: some View {
+        VStack(spacing: 8) {
+            // Heart Rate — now driven by real HKLiveWorkoutBuilder samples.
+            HStack {
+                Image(systemName: "heart.fill")
+                    .foregroundColor(.red)
+                    .scaleEffect(1.2)
+                    .symbolEffect(.bounce, options: workout.isRunning ? .repeating : .nonRepeating)
+                Text(workout.heartRate > 0 ? "\(Int(workout.heartRate))" : "--")
+                    .font(.system(.title3, design: .rounded))
+                    .fontWeight(.bold)
+                Text("BPM")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+
+            // Active energy and elapsed duration (replaces the old hardcoded pace/time).
+            HStack(spacing: 16) {
+                VStack(alignment: .leading) {
+                    Text("KCAL")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.gray)
+                    Text("\(Int(workout.activeEnergy))")
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                }
+                VStack(alignment: .leading) {
+                    Text("TIME")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.gray)
+                    Text(formatElapsed(workout.elapsedSeconds))
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                }
+            }
+            .padding(.vertical, 4)
+
+            // Live AI Guidance on Watch — prefer the Phone's coaching when present,
+            // otherwise derive a local zone from the live heart rate.
+            let guidance = connector.lastCoaching?.instruction ?? localGuidance
+            VStack {
+                Text(guidance)
+                    .font(.caption)
+                    .fontWeight(.black)
+                    .foregroundColor(.black)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(guidanceColor)
+            .cornerRadius(8)
+
+            // If the Phone sent a recovery score, show it.
+            if let coaching = connector.lastCoaching {
+                Text("Recovery \(coaching.recoveryScore)%  ·  \(coaching.targetZone)")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundColor(.gray)
+            }
+
+            // Surface any workout error.
+            if let error = workout.lastError {
+                Text(error)
+                    .font(.caption2)
+                    .foregroundColor(.red)
+                    .lineLimit(2)
+            }
+
+            // Workout controls — Start / Pause / Stop drive the real HKWorkoutSession.
+            HStack(spacing: 8) {
+                if !workout.isRunning {
+                    Button {
+                        Task { await workout.start() }
+                    } label: {
+                        Label("Start", systemImage: "play.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.green)
+                } else {
+                    Button {
+                        Task { await workout.pause() }
+                    } label: {
+                        Image(systemName: "pause.fill")
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button {
+                        Task { await workout.stop() }
+                    } label: {
+                        Image(systemName: "stop.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.red)
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+        .padding()
+        .onAppear {
+            // Request HealthKit authorization as soon as the workout view appears.
+            // watchOS only shows the permission sheet ONCE per install, and
+            // requesting it here (rather than from the Start button tap) is the
+            // timing the system expects — otherwise the sheet may never appear
+            // and the workout write permission stays "not granted" forever.
+            Task { await workout.requestAuthorization() }
+        }
+    }
+
+    // MARK: - Local guidance derived from live heart rate
+
+    private var localGuidance: String {
+        guard workout.heartRate > 0 else { return "Tap Start" }
+        if workout.heartRate > 165 { return "SLOW DOWN (ZONE 5)" }
+        if workout.heartRate < 130 { return "SPEED UP (ZONE 2)" }
+        return "STEADY BASE (ZONE 3)"
+    }
+
+    private var guidanceColor: Color {
+        guard workout.heartRate > 0 else { return .gray }
+        if workout.heartRate > 165 { return .red }
+        if workout.heartRate < 130 { return .yellow }
+        return .green
+    }
+
+    private func formatElapsed(_ seconds: Int) -> String {
+        let m = seconds / 60
+        let s = seconds % 60
+        return String(format: "%dm %02ds", m, s)
+    }
+}

@@ -1,0 +1,803 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		03464EF7FA2C922F8B4F1BB2 /* LongevityView.swift.bak-20260719-190007 in Resources */ = {isa = PBXBuildFile; fileRef = 3E09150013840C4BDEEB3D42 /* LongevityView.swift.bak-20260719-190007 */; };
+		04250D0DCC90088EA2A330AE /* LongevityView.swift.bak-20260719-180310 in Resources */ = {isa = PBXBuildFile; fileRef = 64FDF3F80A03683508E80C0C /* LongevityView.swift.bak-20260719-180310 */; };
+		0A28DE4282B7E98B883E7E99 /* RecoveryEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2135EEE8BD77F212FBE31C67 /* RecoveryEngine.swift */; };
+		0C71CE304E3ACCA06918797E /* EvidenceLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 072CE89734A65DF784DC3D76 /* EvidenceLibrary.swift */; };
+		14946D8AE3D909BEEE8E5EC8 /* RecoveryView.swift.bak-20260719-191648 in Resources */ = {isa = PBXBuildFile; fileRef = 06BF2F0702F11607F8D4D683 /* RecoveryView.swift.bak-20260719-191648 */; };
+		15D605ABBF87BF5BD441536D /* LiveWorkoutCoachView.swift.bak-20260719-184255 in Resources */ = {isa = PBXBuildFile; fileRef = B464B985B520865B2DFE9769 /* LiveWorkoutCoachView.swift.bak-20260719-184255 */; };
+		20717F0F2C15C8BC3F6FF47A /* HealthKitManager.swift.bak-20260719-190007 in Resources */ = {isa = PBXBuildFile; fileRef = 235F39AD544744B5000E3838 /* HealthKitManager.swift.bak-20260719-190007 */; };
+		25B0D92292C2F766035299E9 /* ProGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CDBA6831FD31A7B07BF523E /* ProGateView.swift */; };
+		291F0EF3E817E78EE5262DA7 /* JournalView.swift.bak-20260719-191648 in Resources */ = {isa = PBXBuildFile; fileRef = 420AED3D35AB8302CB83BE71 /* JournalView.swift.bak-20260719-191648 */; };
+		2E875B9600FF871D87B1A0F7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2129E55F92B23E243C9AE2B0 /* Assets.xcassets */; };
+		356DF65ED3858407D1729B38 /* AptusApp.swift.bak-20260719-173454 in Resources */ = {isa = PBXBuildFile; fileRef = AE6E6C11F04ADB08FDE4351B /* AptusApp.swift.bak-20260719-173454 */; };
+		35B840D9402EDF3822AC041E /* FitnessEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4825C700BD7360BDAE971DEF /* FitnessEngine.swift */; };
+		36764C6C101BAD8E3BA9B697 /* LongevityView.swift.bak-20260719-191648 in Resources */ = {isa = PBXBuildFile; fileRef = A36324A8FC0FDE8FB945738F /* LongevityView.swift.bak-20260719-191648 */; };
+		38EC2DE236A86C350C1E390F /* LiveWorkoutCoachView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8A51066FF7575A94C80D1CF /* LiveWorkoutCoachView.swift */; };
+		3F93FAC9285BF2F17DF01FF1 /* LiveCoachingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDCEF35A1F469F634C8AA056 /* LiveCoachingEngine.swift */; };
+		46DE77AA3589FCC0DEFC5859 /* PatternSignalsView.swift.bak-20260719-191648 in Resources */ = {isa = PBXBuildFile; fileRef = 632BA09F88DCC79F32E86025 /* PatternSignalsView.swift.bak-20260719-191648 */; };
+		47B0CF3BB27345509E1DDD86 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 32411CE998E2C82F8B5D112F /* WatchConnectivity.framework */; };
+		47D3E820C8556CCE524D6D4D /* AptusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB878BA0169F649E5EE131F /* AptusApp.swift */; };
+		4DBCC40E963B44BF9FF8D515 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D9D7665BB915B128CDA1D39 /* HealthKit.framework */; };
+		6347E37B854C75FBD245F956 /* ConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2F8E1915EBFA066FF9FE75 /* ConnectivityManager.swift */; };
+		6A9F99555E8D17DA918AE83E /* LongevityEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2ECE2A8BFB779EB6677FC4EA /* LongevityEngine.swift */; };
+		6C23A3C3500E24B83DA7C361 /* FitnessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE074B57BA49FD3C11E1D650 /* FitnessView.swift */; };
+		6F1C5C9BF0E610030C68CCB1 /* RecoveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3BF71B54F9D98457C370D37 /* RecoveryView.swift */; };
+		71AB702859365BC5F90531A2 /* WatchWorkoutTelemetryView.swift.bak-20260719-184255 in Resources */ = {isa = PBXBuildFile; fileRef = 0C21641750701EF51C6CCB62 /* WatchWorkoutTelemetryView.swift.bak-20260719-184255 */; };
+		763679E8A0D8E1F939F4A220 /* AptusApp.swift.bak-20260719-180310 in Resources */ = {isa = PBXBuildFile; fileRef = 906E9B58A0C4E2F9595528B7 /* AptusApp.swift.bak-20260719-180310 */; };
+		76761061B2D13BDF00BF0945 /* PatternSignalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 572A2CB567D2079DA708BF19 /* PatternSignalsView.swift */; };
+		76FD33263406ED12755F4903 /* AptusWatchApp.swift.bak-20260719-184255 in Resources */ = {isa = PBXBuildFile; fileRef = C1E403CE6987F085AC0EDBA1 /* AptusWatchApp.swift.bak-20260719-184255 */; };
+		7EC68A05AF55B3D896043A3F /* PhoneDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0199AEB8294F6E847425523 /* PhoneDashboardView.swift */; };
+		7FED5F966C31B79632DB235A /* WatchWorkoutTelemetryView.swift.bak-20260719-180310 in Resources */ = {isa = PBXBuildFile; fileRef = AC3D81DFE9CDB250660991B2 /* WatchWorkoutTelemetryView.swift.bak-20260719-180310 */; };
+		82DFD1D05D1BE8A6860C3177 /* JournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B7237DB0EF575361B4A1D4 /* JournalView.swift */; };
+		8AA379FB5D28C7EBC4B5263B /* LiveCoachingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDCEF35A1F469F634C8AA056 /* LiveCoachingEngine.swift */; };
+		931FFEECE0DD7E1A73F11D13 /* WatchWorkoutTelemetryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9154492D75184B2EF22C5A /* WatchWorkoutTelemetryView.swift */; };
+		95331191C1368690D1DAF28F /* Aptus Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 61CE55CD95EED48D1059CC0B /* Aptus Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		95647E6FA198A362DE3791D8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1658C0D121FA226C5EBC4D27 /* Assets.xcassets */; };
+		974C7E7502A14969BB729C8B /* EvidenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864E52B8ED19CFA764C27116 /* EvidenceView.swift */; };
+		9EA4B7BF009D107D5A9AB134 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D9D7665BB915B128CDA1D39 /* HealthKit.framework */; };
+		A5CCB4F1FFF4F780FF511832 /* AptusWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B61528536E2EC1DD6298CC6 /* AptusWatchApp.swift */; };
+		AFC1488B895249947365007D /* HealthKitManager.swift.bak-20260719-182554 in Resources */ = {isa = PBXBuildFile; fileRef = 05A321412D575CBEBBE6B533 /* HealthKitManager.swift.bak-20260719-182554 */; };
+		B17BF95E710BD36BE5660B36 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3535CE80F0F41EDE159B0CA /* OnboardingView.swift */; };
+		B33C1DA259890E9549426164 /* PhoneDashboardView.swift.bak-20260719-180310 in Resources */ = {isa = PBXBuildFile; fileRef = A81EEBFD7CD0EF97F845F4A0 /* PhoneDashboardView.swift.bak-20260719-180310 */; };
+		B5C408793865E018F0ECBCD8 /* PatternDetectorEngine.swift.bak-20260719-191648 in Resources */ = {isa = PBXBuildFile; fileRef = 6233566C72722E308194D3FD /* PatternDetectorEngine.swift.bak-20260719-191648 */; };
+		B6144BAB40AFAE85CED38156 /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E87487E1BC5880D0B9AD73C4 /* HealthKitManager.swift */; };
+		B63AD3DE3C62F38B6025A395 /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2A1E69FF15ADE668E4A6E45 /* SubscriptionManager.swift */; };
+		BE948053A49B939BEAC2103E /* PatternDetectorEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFF910B0E675AD999DB2A8C /* PatternDetectorEngine.swift */; };
+		C76B4956F65EA0635613CF2B /* PhoneDashboardView.swift.bak-20260719-191648 in Resources */ = {isa = PBXBuildFile; fileRef = D1F1C72CBFC0D61BF5CFE1C6 /* PhoneDashboardView.swift.bak-20260719-191648 */; };
+		C9B62BF1F184F6B6B3FB4A33 /* WorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14BE4B27584842E7DD19DC81 /* WorkoutManager.swift */; };
+		CB51C0D1A3DFEB2E60C8A677 /* FitnessView.swift.bak-20260719-190007 in Resources */ = {isa = PBXBuildFile; fileRef = 6C8C3344D9B783E8A046F7CF /* FitnessView.swift.bak-20260719-190007 */; };
+		CC7804FBF6854FAA22E5DDBD /* HiddenSignalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25452393B0581AEF9384C711 /* HiddenSignalsView.swift */; };
+		CDAE5818F36216ACB5D6A418 /* AptusApp.swift.bak-20260719-191648 in Resources */ = {isa = PBXBuildFile; fileRef = 8FCD5FA6C39569D5B1DAF3A7 /* AptusApp.swift.bak-20260719-191648 */; };
+		D1E6A6503013C2F6BA8AAE1C /* HealthKitManager.swift.bak-20260719-173454 in Resources */ = {isa = PBXBuildFile; fileRef = AE5B3CEB9E660DD6C495AFA3 /* HealthKitManager.swift.bak-20260719-173454 */; };
+		D4F33C913E2C8B8127C495A9 /* RecoveryView.swift.bak-20260719-180310 in Resources */ = {isa = PBXBuildFile; fileRef = CDE40AC513479D658F2D8139 /* RecoveryView.swift.bak-20260719-180310 */; };
+		D72BC3C03CDBC8BAACD1CE72 /* FitnessView.swift.bak-20260719-191648 in Resources */ = {isa = PBXBuildFile; fileRef = F407FE99A8DB85ED34449404 /* FitnessView.swift.bak-20260719-191648 */; };
+		DE3AB25A0DA429A4D601E618 /* PhoneDashboardView.swift.bak-20260719-190007 in Resources */ = {isa = PBXBuildFile; fileRef = C4B6D68EC2349CAF913885A2 /* PhoneDashboardView.swift.bak-20260719-190007 */; };
+		DE91DB9F300EE830005F6589 /* Aptus.storekit in Resources */ = {isa = PBXBuildFile; fileRef = DE91DB9E300EE830005F6589 /* Aptus.storekit */; };
+		DE91DBA1300EEB48005F6589 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE91DBA0300EEB48005F6589 /* StoreKit.framework */; };
+		DEDE9C55301B06F300270207 /* AISourceBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEDE9C54301B06CD00270207 /* AISourceBadge.swift */; };
+		DEDE9C59301B807E00270207 /* AptusConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEDE9C58301B806E00270207 /* AptusConfig.swift */; };
+		DFB6F4551AE6A584E897AB55 /* PhoneDashboardView.swift.bak-20260719-173454 in Resources */ = {isa = PBXBuildFile; fileRef = 9834FA509998D960058C4768 /* PhoneDashboardView.swift.bak-20260719-173454 */; };
+		E29847A92999862D9E81B60F /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F491795A307A9EB858DDDF /* PaywallView.swift */; };
+		E3A3DD8356C09F70084B95F8 /* PatternSignalsView.swift.bak-20260719-190007 in Resources */ = {isa = PBXBuildFile; fileRef = 35C5646C944A4D0217D69907 /* PatternSignalsView.swift.bak-20260719-190007 */; };
+		E7D5D5089FD0D7D1B73FCF41 /* NarrativeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93152EB3523F5442075CE6D /* NarrativeService.swift */; };
+		E8FA7EB5934BA21141B5A8FE /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 32411CE998E2C82F8B5D112F /* WatchConnectivity.framework */; };
+		E9D970EA645AB3A82EFC2575 /* RecoveryView.swift.bak-20260719-190007 in Resources */ = {isa = PBXBuildFile; fileRef = E8530114CBCA09DA619A09B9 /* RecoveryView.swift.bak-20260719-190007 */; };
+		E9E34F804B1F5A10307F36DC /* ConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2F8E1915EBFA066FF9FE75 /* ConnectivityManager.swift */; };
+		EA986A8BD475AB0DC8577626 /* HiddenSignalsView.swift.bak-20260719-191648 in Resources */ = {isa = PBXBuildFile; fileRef = 8757BC1C6B16F9A4A57C5A86 /* HiddenSignalsView.swift.bak-20260719-191648 */; };
+		EB1F4ACA52F360DE7447533F /* HealthKitManager.swift.bak-20260719-180310 in Resources */ = {isa = PBXBuildFile; fileRef = 27444458409C78DC017FF72E /* HealthKitManager.swift.bak-20260719-180310 */; };
+		ED090A88050ECA87676DF461 /* NarrativeService.swift.bak-20260719-190007 in Resources */ = {isa = PBXBuildFile; fileRef = 0CDABA455E737545CD76E1F8 /* NarrativeService.swift.bak-20260719-190007 */; };
+		EDA31BEAF01A1B95A324ABB7 /* LongevityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56A51451E9C5D766A7D2E53A /* LongevityView.swift */; };
+		EEA9FBB4C3A5B656069C81F2 /* EvidenceLibrary.swift.bak-20260719-191648 in Resources */ = {isa = PBXBuildFile; fileRef = 34A0FC0363FA5E60675115D4 /* EvidenceLibrary.swift.bak-20260719-191648 */; };
+		EED35D6316A8FD3A971ADBD5 /* JournalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60DD636AF55CB4BADCA0CBD1 /* JournalStore.swift */; };
+		FEE626D0DD5EF8593B394821 /* PhoneDashboardView.swift.bak-20260719-182554 in Resources */ = {isa = PBXBuildFile; fileRef = 6C154134F9E42BD5D81492E4 /* PhoneDashboardView.swift.bak-20260719-182554 */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0B3E5513C66A9C4A48694561 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A4AD81C4959221C8BCEEC3A1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 94AB1C30C6A36A3A65E7B924;
+			remoteInfo = "Aptus Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8DDA524F94C526C32CA247ED /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				95331191C1368690D1DAF28F /* Aptus Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		026BFFC9F0EFFA29067AC2E3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		0292FAB664AD8519C7F92682 /* Aptus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Aptus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		05A321412D575CBEBBE6B533 /* HealthKitManager.swift.bak-20260719-182554 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "HealthKitManager.swift.bak-20260719-182554"; sourceTree = "<group>"; };
+		06BF2F0702F11607F8D4D683 /* RecoveryView.swift.bak-20260719-191648 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "RecoveryView.swift.bak-20260719-191648"; sourceTree = "<group>"; };
+		072CE89734A65DF784DC3D76 /* EvidenceLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvidenceLibrary.swift; sourceTree = "<group>"; };
+		0C21641750701EF51C6CCB62 /* WatchWorkoutTelemetryView.swift.bak-20260719-184255 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "WatchWorkoutTelemetryView.swift.bak-20260719-184255"; sourceTree = "<group>"; };
+		0CDABA455E737545CD76E1F8 /* NarrativeService.swift.bak-20260719-190007 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "NarrativeService.swift.bak-20260719-190007"; sourceTree = "<group>"; };
+		14BE4B27584842E7DD19DC81 /* WorkoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutManager.swift; sourceTree = "<group>"; };
+		1658C0D121FA226C5EBC4D27 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2129E55F92B23E243C9AE2B0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2135EEE8BD77F212FBE31C67 /* RecoveryEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryEngine.swift; sourceTree = "<group>"; };
+		235F39AD544744B5000E3838 /* HealthKitManager.swift.bak-20260719-190007 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "HealthKitManager.swift.bak-20260719-190007"; sourceTree = "<group>"; };
+		25452393B0581AEF9384C711 /* HiddenSignalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HiddenSignalsView.swift; sourceTree = "<group>"; };
+		27444458409C78DC017FF72E /* HealthKitManager.swift.bak-20260719-180310 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "HealthKitManager.swift.bak-20260719-180310"; sourceTree = "<group>"; };
+		2ECE2A8BFB779EB6677FC4EA /* LongevityEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LongevityEngine.swift; sourceTree = "<group>"; };
+		32411CE998E2C82F8B5D112F /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
+		34A0FC0363FA5E60675115D4 /* EvidenceLibrary.swift.bak-20260719-191648 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "EvidenceLibrary.swift.bak-20260719-191648"; sourceTree = "<group>"; };
+		35C5646C944A4D0217D69907 /* PatternSignalsView.swift.bak-20260719-190007 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "PatternSignalsView.swift.bak-20260719-190007"; sourceTree = "<group>"; };
+		3E09150013840C4BDEEB3D42 /* LongevityView.swift.bak-20260719-190007 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LongevityView.swift.bak-20260719-190007"; sourceTree = "<group>"; };
+		420AED3D35AB8302CB83BE71 /* JournalView.swift.bak-20260719-191648 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "JournalView.swift.bak-20260719-191648"; sourceTree = "<group>"; };
+		4825C700BD7360BDAE971DEF /* FitnessEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessEngine.swift; sourceTree = "<group>"; };
+		4AFF910B0E675AD999DB2A8C /* PatternDetectorEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternDetectorEngine.swift; sourceTree = "<group>"; };
+		50B7237DB0EF575361B4A1D4 /* JournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalView.swift; sourceTree = "<group>"; };
+		56A51451E9C5D766A7D2E53A /* LongevityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LongevityView.swift; sourceTree = "<group>"; };
+		572A2CB567D2079DA708BF19 /* PatternSignalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternSignalsView.swift; sourceTree = "<group>"; };
+		577DBD68FABACB83316642C6 /* Aptus.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Aptus.entitlements; sourceTree = "<group>"; };
+		60DD636AF55CB4BADCA0CBD1 /* JournalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalStore.swift; sourceTree = "<group>"; };
+		61CE55CD95EED48D1059CC0B /* Aptus Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Aptus Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6233566C72722E308194D3FD /* PatternDetectorEngine.swift.bak-20260719-191648 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "PatternDetectorEngine.swift.bak-20260719-191648"; sourceTree = "<group>"; };
+		632BA09F88DCC79F32E86025 /* PatternSignalsView.swift.bak-20260719-191648 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "PatternSignalsView.swift.bak-20260719-191648"; sourceTree = "<group>"; };
+		64FDF3F80A03683508E80C0C /* LongevityView.swift.bak-20260719-180310 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LongevityView.swift.bak-20260719-180310"; sourceTree = "<group>"; };
+		6B61528536E2EC1DD6298CC6 /* AptusWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AptusWatchApp.swift; sourceTree = "<group>"; };
+		6C154134F9E42BD5D81492E4 /* PhoneDashboardView.swift.bak-20260719-182554 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "PhoneDashboardView.swift.bak-20260719-182554"; sourceTree = "<group>"; };
+		6C8C3344D9B783E8A046F7CF /* FitnessView.swift.bak-20260719-190007 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "FitnessView.swift.bak-20260719-190007"; sourceTree = "<group>"; };
+		7CDBA6831FD31A7B07BF523E /* ProGateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProGateView.swift; sourceTree = "<group>"; };
+		7D9D7665BB915B128CDA1D39 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
+		864E52B8ED19CFA764C27116 /* EvidenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvidenceView.swift; sourceTree = "<group>"; };
+		8757BC1C6B16F9A4A57C5A86 /* HiddenSignalsView.swift.bak-20260719-191648 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "HiddenSignalsView.swift.bak-20260719-191648"; sourceTree = "<group>"; };
+		875C550D1F957430FC911E8C /* AptusWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AptusWatch.entitlements; sourceTree = "<group>"; };
+		8FCD5FA6C39569D5B1DAF3A7 /* AptusApp.swift.bak-20260719-191648 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "AptusApp.swift.bak-20260719-191648"; sourceTree = "<group>"; };
+		9038DE010E683128D3A20F87 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		906E9B58A0C4E2F9595528B7 /* AptusApp.swift.bak-20260719-180310 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "AptusApp.swift.bak-20260719-180310"; sourceTree = "<group>"; };
+		9834FA509998D960058C4768 /* PhoneDashboardView.swift.bak-20260719-173454 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "PhoneDashboardView.swift.bak-20260719-173454"; sourceTree = "<group>"; };
+		99F491795A307A9EB858DDDF /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		A0199AEB8294F6E847425523 /* PhoneDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneDashboardView.swift; sourceTree = "<group>"; };
+		A36324A8FC0FDE8FB945738F /* LongevityView.swift.bak-20260719-191648 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LongevityView.swift.bak-20260719-191648"; sourceTree = "<group>"; };
+		A81EEBFD7CD0EF97F845F4A0 /* PhoneDashboardView.swift.bak-20260719-180310 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "PhoneDashboardView.swift.bak-20260719-180310"; sourceTree = "<group>"; };
+		A93152EB3523F5442075CE6D /* NarrativeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NarrativeService.swift; sourceTree = "<group>"; };
+		AC3D81DFE9CDB250660991B2 /* WatchWorkoutTelemetryView.swift.bak-20260719-180310 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "WatchWorkoutTelemetryView.swift.bak-20260719-180310"; sourceTree = "<group>"; };
+		AE5B3CEB9E660DD6C495AFA3 /* HealthKitManager.swift.bak-20260719-173454 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "HealthKitManager.swift.bak-20260719-173454"; sourceTree = "<group>"; };
+		AE6E6C11F04ADB08FDE4351B /* AptusApp.swift.bak-20260719-173454 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "AptusApp.swift.bak-20260719-173454"; sourceTree = "<group>"; };
+		AF2F8E1915EBFA066FF9FE75 /* ConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectivityManager.swift; sourceTree = "<group>"; };
+		B3BF71B54F9D98457C370D37 /* RecoveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryView.swift; sourceTree = "<group>"; };
+		B464B985B520865B2DFE9769 /* LiveWorkoutCoachView.swift.bak-20260719-184255 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LiveWorkoutCoachView.swift.bak-20260719-184255"; sourceTree = "<group>"; };
+		BBB878BA0169F649E5EE131F /* AptusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AptusApp.swift; sourceTree = "<group>"; };
+		C1E403CE6987F085AC0EDBA1 /* AptusWatchApp.swift.bak-20260719-184255 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "AptusWatchApp.swift.bak-20260719-184255"; sourceTree = "<group>"; };
+		C2A1E69FF15ADE668E4A6E45 /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
+		C3535CE80F0F41EDE159B0CA /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		C4B6D68EC2349CAF913885A2 /* PhoneDashboardView.swift.bak-20260719-190007 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "PhoneDashboardView.swift.bak-20260719-190007"; sourceTree = "<group>"; };
+		CC9154492D75184B2EF22C5A /* WatchWorkoutTelemetryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchWorkoutTelemetryView.swift; sourceTree = "<group>"; };
+		CDE40AC513479D658F2D8139 /* RecoveryView.swift.bak-20260719-180310 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "RecoveryView.swift.bak-20260719-180310"; sourceTree = "<group>"; };
+		D1F1C72CBFC0D61BF5CFE1C6 /* PhoneDashboardView.swift.bak-20260719-191648 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "PhoneDashboardView.swift.bak-20260719-191648"; sourceTree = "<group>"; };
+		D8A51066FF7575A94C80D1CF /* LiveWorkoutCoachView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveWorkoutCoachView.swift; sourceTree = "<group>"; };
+		DE91DB9E300EE830005F6589 /* Aptus.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Aptus.storekit; sourceTree = "<group>"; };
+		DE91DBA0300EEB48005F6589 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/System/Library/Frameworks/StoreKit.framework; sourceTree = DEVELOPER_DIR; };
+		DEDE9C54301B06CD00270207 /* AISourceBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AISourceBadge.swift; sourceTree = "<group>"; };
+		DEDE9C58301B806E00270207 /* AptusConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AptusConfig.swift; sourceTree = "<group>"; };
+		E8530114CBCA09DA619A09B9 /* RecoveryView.swift.bak-20260719-190007 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "RecoveryView.swift.bak-20260719-190007"; sourceTree = "<group>"; };
+		E87487E1BC5880D0B9AD73C4 /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
+		EE074B57BA49FD3C11E1D650 /* FitnessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessView.swift; sourceTree = "<group>"; };
+		F407FE99A8DB85ED34449404 /* FitnessView.swift.bak-20260719-191648 */ = {isa = PBXFileReference; lastKnownFileType = text; path = "FitnessView.swift.bak-20260719-191648"; sourceTree = "<group>"; };
+		FDCEF35A1F469F634C8AA056 /* LiveCoachingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCoachingEngine.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		68BD5B390C9EE5761167EDFA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4DBCC40E963B44BF9FF8D515 /* HealthKit.framework in Frameworks */,
+				47B0CF3BB27345509E1DDD86 /* WatchConnectivity.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BF3DDD3172890ADDA997BC42 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DE91DBA1300EEB48005F6589 /* StoreKit.framework in Frameworks */,
+				9EA4B7BF009D107D5A9AB134 /* HealthKit.framework in Frameworks */,
+				E8FA7EB5934BA21141B5A8FE /* WatchConnectivity.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		143B73CF7C0BF0ADBF815E4D /* HealthKit */ = {
+			isa = PBXGroup;
+			children = (
+				E87487E1BC5880D0B9AD73C4 /* HealthKitManager.swift */,
+				AE5B3CEB9E660DD6C495AFA3 /* HealthKitManager.swift.bak-20260719-173454 */,
+				27444458409C78DC017FF72E /* HealthKitManager.swift.bak-20260719-180310 */,
+				05A321412D575CBEBBE6B533 /* HealthKitManager.swift.bak-20260719-182554 */,
+				235F39AD544744B5000E3838 /* HealthKitManager.swift.bak-20260719-190007 */,
+			);
+			path = HealthKit;
+			sourceTree = "<group>";
+		};
+		1FEC4974AA2984A2C881C6F1 /* HealthKit */ = {
+			isa = PBXGroup;
+			children = (
+				14BE4B27584842E7DD19DC81 /* WorkoutManager.swift */,
+			);
+			path = HealthKit;
+			sourceTree = "<group>";
+		};
+		2E3DC87B9C2FAF1B0AA7026C /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				1658C0D121FA226C5EBC4D27 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		3E2FAB036ADD3A2A82BA4FDC /* Aptus Watch App */ = {
+			isa = PBXGroup;
+			children = (
+				1FEC4974AA2984A2C881C6F1 /* HealthKit */,
+				2E3DC87B9C2FAF1B0AA7026C /* Resources */,
+				792505883828968359104F69 /* Views */,
+				875C550D1F957430FC911E8C /* AptusWatch.entitlements */,
+				6B61528536E2EC1DD6298CC6 /* AptusWatchApp.swift */,
+				C1E403CE6987F085AC0EDBA1 /* AptusWatchApp.swift.bak-20260719-184255 */,
+				9038DE010E683128D3A20F87 /* Info.plist */,
+			);
+			path = "Aptus Watch App";
+			sourceTree = "<group>";
+		};
+		792505883828968359104F69 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				CC9154492D75184B2EF22C5A /* WatchWorkoutTelemetryView.swift */,
+				AC3D81DFE9CDB250660991B2 /* WatchWorkoutTelemetryView.swift.bak-20260719-180310 */,
+				0C21641750701EF51C6CCB62 /* WatchWorkoutTelemetryView.swift.bak-20260719-184255 */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		896B2AC2D408D24266DB4CEF /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				864E52B8ED19CFA764C27116 /* EvidenceView.swift */,
+				EE074B57BA49FD3C11E1D650 /* FitnessView.swift */,
+				6C8C3344D9B783E8A046F7CF /* FitnessView.swift.bak-20260719-190007 */,
+				F407FE99A8DB85ED34449404 /* FitnessView.swift.bak-20260719-191648 */,
+				25452393B0581AEF9384C711 /* HiddenSignalsView.swift */,
+				8757BC1C6B16F9A4A57C5A86 /* HiddenSignalsView.swift.bak-20260719-191648 */,
+				50B7237DB0EF575361B4A1D4 /* JournalView.swift */,
+				420AED3D35AB8302CB83BE71 /* JournalView.swift.bak-20260719-191648 */,
+				D8A51066FF7575A94C80D1CF /* LiveWorkoutCoachView.swift */,
+				B464B985B520865B2DFE9769 /* LiveWorkoutCoachView.swift.bak-20260719-184255 */,
+				56A51451E9C5D766A7D2E53A /* LongevityView.swift */,
+				64FDF3F80A03683508E80C0C /* LongevityView.swift.bak-20260719-180310 */,
+				3E09150013840C4BDEEB3D42 /* LongevityView.swift.bak-20260719-190007 */,
+				A36324A8FC0FDE8FB945738F /* LongevityView.swift.bak-20260719-191648 */,
+				C3535CE80F0F41EDE159B0CA /* OnboardingView.swift */,
+				572A2CB567D2079DA708BF19 /* PatternSignalsView.swift */,
+				35C5646C944A4D0217D69907 /* PatternSignalsView.swift.bak-20260719-190007 */,
+				632BA09F88DCC79F32E86025 /* PatternSignalsView.swift.bak-20260719-191648 */,
+				99F491795A307A9EB858DDDF /* PaywallView.swift */,
+				A0199AEB8294F6E847425523 /* PhoneDashboardView.swift */,
+				9834FA509998D960058C4768 /* PhoneDashboardView.swift.bak-20260719-173454 */,
+				A81EEBFD7CD0EF97F845F4A0 /* PhoneDashboardView.swift.bak-20260719-180310 */,
+				6C154134F9E42BD5D81492E4 /* PhoneDashboardView.swift.bak-20260719-182554 */,
+				C4B6D68EC2349CAF913885A2 /* PhoneDashboardView.swift.bak-20260719-190007 */,
+				D1F1C72CBFC0D61BF5CFE1C6 /* PhoneDashboardView.swift.bak-20260719-191648 */,
+				7CDBA6831FD31A7B07BF523E /* ProGateView.swift */,
+				B3BF71B54F9D98457C370D37 /* RecoveryView.swift */,
+				CDE40AC513479D658F2D8139 /* RecoveryView.swift.bak-20260719-180310 */,
+				E8530114CBCA09DA619A09B9 /* RecoveryView.swift.bak-20260719-190007 */,
+				06BF2F0702F11607F8D4D683 /* RecoveryView.swift.bak-20260719-191648 */,
+				DEDE9C54301B06CD00270207 /* AISourceBadge.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		937145A72668B64C01D22E67 = {
+			isa = PBXGroup;
+			children = (
+				DEDE9C58301B806E00270207 /* AptusConfig.swift */,
+				DE91DB9E300EE830005F6589 /* Aptus.storekit */,
+				E60342375D4B8FCBD2643215 /* Aptus */,
+				3E2FAB036ADD3A2A82BA4FDC /* Aptus Watch App */,
+				E000A61BAE1532B16EA866AD /* Shared */,
+				C9D2625CCD7551EF2A34F22A /* Frameworks */,
+				A047B10AC5223C9C5E48BED9 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		9CC65A3E3B3BDB83169CDDAD /* Engines */ = {
+			isa = PBXGroup;
+			children = (
+				072CE89734A65DF784DC3D76 /* EvidenceLibrary.swift */,
+				34A0FC0363FA5E60675115D4 /* EvidenceLibrary.swift.bak-20260719-191648 */,
+				4825C700BD7360BDAE971DEF /* FitnessEngine.swift */,
+				60DD636AF55CB4BADCA0CBD1 /* JournalStore.swift */,
+				FDCEF35A1F469F634C8AA056 /* LiveCoachingEngine.swift */,
+				2ECE2A8BFB779EB6677FC4EA /* LongevityEngine.swift */,
+				A93152EB3523F5442075CE6D /* NarrativeService.swift */,
+				0CDABA455E737545CD76E1F8 /* NarrativeService.swift.bak-20260719-190007 */,
+				4AFF910B0E675AD999DB2A8C /* PatternDetectorEngine.swift */,
+				6233566C72722E308194D3FD /* PatternDetectorEngine.swift.bak-20260719-191648 */,
+				2135EEE8BD77F212FBE31C67 /* RecoveryEngine.swift */,
+				C2A1E69FF15ADE668E4A6E45 /* SubscriptionManager.swift */,
+			);
+			path = Engines;
+			sourceTree = "<group>";
+		};
+		A047B10AC5223C9C5E48BED9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				61CE55CD95EED48D1059CC0B /* Aptus Watch App.app */,
+				0292FAB664AD8519C7F92682 /* Aptus.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C9D2625CCD7551EF2A34F22A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				DE91DBA0300EEB48005F6589 /* StoreKit.framework */,
+				7D9D7665BB915B128CDA1D39 /* HealthKit.framework */,
+				32411CE998E2C82F8B5D112F /* WatchConnectivity.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		E000A61BAE1532B16EA866AD /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				AF2F8E1915EBFA066FF9FE75 /* ConnectivityManager.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		E60342375D4B8FCBD2643215 /* Aptus */ = {
+			isa = PBXGroup;
+			children = (
+				9CC65A3E3B3BDB83169CDDAD /* Engines */,
+				143B73CF7C0BF0ADBF815E4D /* HealthKit */,
+				FDF88544419DECFA3C35E138 /* Resources */,
+				896B2AC2D408D24266DB4CEF /* Views */,
+				577DBD68FABACB83316642C6 /* Aptus.entitlements */,
+				BBB878BA0169F649E5EE131F /* AptusApp.swift */,
+				AE6E6C11F04ADB08FDE4351B /* AptusApp.swift.bak-20260719-173454 */,
+				906E9B58A0C4E2F9595528B7 /* AptusApp.swift.bak-20260719-180310 */,
+				8FCD5FA6C39569D5B1DAF3A7 /* AptusApp.swift.bak-20260719-191648 */,
+				026BFFC9F0EFFA29067AC2E3 /* Info.plist */,
+			);
+			path = Aptus;
+			sourceTree = "<group>";
+		};
+		FDF88544419DECFA3C35E138 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				2129E55F92B23E243C9AE2B0 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		94AB1C30C6A36A3A65E7B924 /* Aptus Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 07702932D62A7C80928D1817 /* Build configuration list for PBXNativeTarget "Aptus Watch App" */;
+			buildPhases = (
+				CBDF4AC4F9E078257392C162 /* Sources */,
+				BC6A340BE08E011863001F38 /* Resources */,
+				68BD5B390C9EE5761167EDFA /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Aptus Watch App";
+			packageProductDependencies = (
+			);
+			productName = "Aptus Watch App";
+			productReference = 61CE55CD95EED48D1059CC0B /* Aptus Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		BD62C1C3E6A233BD4D57644B /* Aptus */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 843C024216CA97DFE787C8EF /* Build configuration list for PBXNativeTarget "Aptus" */;
+			buildPhases = (
+				664A07863F14F036D335DDB6 /* Sources */,
+				40B4B27D8A7EDAE1090BED3E /* Resources */,
+				BF3DDD3172890ADDA997BC42 /* Frameworks */,
+				8DDA524F94C526C32CA247ED /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				95525AC5743A540A18B9A1FF /* PBXTargetDependency */,
+			);
+			name = Aptus;
+			packageProductDependencies = (
+			);
+			productName = Aptus;
+			productReference = 0292FAB664AD8519C7F92682 /* Aptus.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A4AD81C4959221C8BCEEC3A1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					94AB1C30C6A36A3A65E7B924 = {
+						ProvisioningStyle = Automatic;
+					};
+					BD62C1C3E6A233BD4D57644B = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 14DFA87298869ADE1DE83C15 /* Build configuration list for PBXProject "Aptus" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 937145A72668B64C01D22E67;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A047B10AC5223C9C5E48BED9 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BD62C1C3E6A233BD4D57644B /* Aptus */,
+				94AB1C30C6A36A3A65E7B924 /* Aptus Watch App */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		40B4B27D8A7EDAE1090BED3E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DE91DB9F300EE830005F6589 /* Aptus.storekit in Resources */,
+				356DF65ED3858407D1729B38 /* AptusApp.swift.bak-20260719-173454 in Resources */,
+				763679E8A0D8E1F939F4A220 /* AptusApp.swift.bak-20260719-180310 in Resources */,
+				CDAE5818F36216ACB5D6A418 /* AptusApp.swift.bak-20260719-191648 in Resources */,
+				2E875B9600FF871D87B1A0F7 /* Assets.xcassets in Resources */,
+				EEA9FBB4C3A5B656069C81F2 /* EvidenceLibrary.swift.bak-20260719-191648 in Resources */,
+				CB51C0D1A3DFEB2E60C8A677 /* FitnessView.swift.bak-20260719-190007 in Resources */,
+				D72BC3C03CDBC8BAACD1CE72 /* FitnessView.swift.bak-20260719-191648 in Resources */,
+				D1E6A6503013C2F6BA8AAE1C /* HealthKitManager.swift.bak-20260719-173454 in Resources */,
+				EB1F4ACA52F360DE7447533F /* HealthKitManager.swift.bak-20260719-180310 in Resources */,
+				AFC1488B895249947365007D /* HealthKitManager.swift.bak-20260719-182554 in Resources */,
+				20717F0F2C15C8BC3F6FF47A /* HealthKitManager.swift.bak-20260719-190007 in Resources */,
+				EA986A8BD475AB0DC8577626 /* HiddenSignalsView.swift.bak-20260719-191648 in Resources */,
+				291F0EF3E817E78EE5262DA7 /* JournalView.swift.bak-20260719-191648 in Resources */,
+				15D605ABBF87BF5BD441536D /* LiveWorkoutCoachView.swift.bak-20260719-184255 in Resources */,
+				04250D0DCC90088EA2A330AE /* LongevityView.swift.bak-20260719-180310 in Resources */,
+				03464EF7FA2C922F8B4F1BB2 /* LongevityView.swift.bak-20260719-190007 in Resources */,
+				36764C6C101BAD8E3BA9B697 /* LongevityView.swift.bak-20260719-191648 in Resources */,
+				ED090A88050ECA87676DF461 /* NarrativeService.swift.bak-20260719-190007 in Resources */,
+				B5C408793865E018F0ECBCD8 /* PatternDetectorEngine.swift.bak-20260719-191648 in Resources */,
+				E3A3DD8356C09F70084B95F8 /* PatternSignalsView.swift.bak-20260719-190007 in Resources */,
+				46DE77AA3589FCC0DEFC5859 /* PatternSignalsView.swift.bak-20260719-191648 in Resources */,
+				DFB6F4551AE6A584E897AB55 /* PhoneDashboardView.swift.bak-20260719-173454 in Resources */,
+				B33C1DA259890E9549426164 /* PhoneDashboardView.swift.bak-20260719-180310 in Resources */,
+				FEE626D0DD5EF8593B394821 /* PhoneDashboardView.swift.bak-20260719-182554 in Resources */,
+				DE3AB25A0DA429A4D601E618 /* PhoneDashboardView.swift.bak-20260719-190007 in Resources */,
+				C76B4956F65EA0635613CF2B /* PhoneDashboardView.swift.bak-20260719-191648 in Resources */,
+				D4F33C913E2C8B8127C495A9 /* RecoveryView.swift.bak-20260719-180310 in Resources */,
+				E9D970EA645AB3A82EFC2575 /* RecoveryView.swift.bak-20260719-190007 in Resources */,
+				14946D8AE3D909BEEE8E5EC8 /* RecoveryView.swift.bak-20260719-191648 in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BC6A340BE08E011863001F38 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				76FD33263406ED12755F4903 /* AptusWatchApp.swift.bak-20260719-184255 in Resources */,
+				95647E6FA198A362DE3791D8 /* Assets.xcassets in Resources */,
+				7FED5F966C31B79632DB235A /* WatchWorkoutTelemetryView.swift.bak-20260719-180310 in Resources */,
+				71AB702859365BC5F90531A2 /* WatchWorkoutTelemetryView.swift.bak-20260719-184255 in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		664A07863F14F036D335DDB6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DEDE9C55301B06F300270207 /* AISourceBadge.swift in Sources */,
+				47D3E820C8556CCE524D6D4D /* AptusApp.swift in Sources */,
+				E9E34F804B1F5A10307F36DC /* ConnectivityManager.swift in Sources */,
+				0C71CE304E3ACCA06918797E /* EvidenceLibrary.swift in Sources */,
+				974C7E7502A14969BB729C8B /* EvidenceView.swift in Sources */,
+				35B840D9402EDF3822AC041E /* FitnessEngine.swift in Sources */,
+				6C23A3C3500E24B83DA7C361 /* FitnessView.swift in Sources */,
+				B6144BAB40AFAE85CED38156 /* HealthKitManager.swift in Sources */,
+				CC7804FBF6854FAA22E5DDBD /* HiddenSignalsView.swift in Sources */,
+				EED35D6316A8FD3A971ADBD5 /* JournalStore.swift in Sources */,
+				82DFD1D05D1BE8A6860C3177 /* JournalView.swift in Sources */,
+				3F93FAC9285BF2F17DF01FF1 /* LiveCoachingEngine.swift in Sources */,
+				38EC2DE236A86C350C1E390F /* LiveWorkoutCoachView.swift in Sources */,
+				6A9F99555E8D17DA918AE83E /* LongevityEngine.swift in Sources */,
+				EDA31BEAF01A1B95A324ABB7 /* LongevityView.swift in Sources */,
+				DEDE9C59301B807E00270207 /* AptusConfig.swift in Sources */,
+				E7D5D5089FD0D7D1B73FCF41 /* NarrativeService.swift in Sources */,
+				B17BF95E710BD36BE5660B36 /* OnboardingView.swift in Sources */,
+				BE948053A49B939BEAC2103E /* PatternDetectorEngine.swift in Sources */,
+				76761061B2D13BDF00BF0945 /* PatternSignalsView.swift in Sources */,
+				E29847A92999862D9E81B60F /* PaywallView.swift in Sources */,
+				7EC68A05AF55B3D896043A3F /* PhoneDashboardView.swift in Sources */,
+				25B0D92292C2F766035299E9 /* ProGateView.swift in Sources */,
+				0A28DE4282B7E98B883E7E99 /* RecoveryEngine.swift in Sources */,
+				6F1C5C9BF0E610030C68CCB1 /* RecoveryView.swift in Sources */,
+				B63AD3DE3C62F38B6025A395 /* SubscriptionManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CBDF4AC4F9E078257392C162 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A5CCB4F1FFF4F780FF511832 /* AptusWatchApp.swift in Sources */,
+				6347E37B854C75FBD245F956 /* ConnectivityManager.swift in Sources */,
+				8AA379FB5D28C7EBC4B5263B /* LiveCoachingEngine.swift in Sources */,
+				931FFEECE0DD7E1A73F11D13 /* WatchWorkoutTelemetryView.swift in Sources */,
+				C9B62BF1F184F6B6B3FB4A33 /* WorkoutManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		95525AC5743A540A18B9A1FF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 94AB1C30C6A36A3A65E7B924 /* Aptus Watch App */;
+			targetProxy = 0B3E5513C66A9C4A48694561 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0358EAC616ECD5CEF018EA04 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "Aptus Watch App/AptusWatch.entitlements";
+				CURRENT_PROJECT_VERSION = 16;
+				DEVELOPMENT_TEAM = 523MJL63MC;
+				INFOPLIST_FILE = "Aptus Watch App/Info.plist";
+				INFOPLIST_KEY_WKWatchKitApp = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.robertapolk.Aptus.watchkitapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchsimulator watchos";
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Debug;
+		};
+		2318511BD36B716AAE9F86EB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "Aptus Watch App/AptusWatch.entitlements";
+				CURRENT_PROJECT_VERSION = 16;
+				DEVELOPMENT_TEAM = 523MJL63MC;
+				INFOPLIST_FILE = "Aptus Watch App/Info.plist";
+				INFOPLIST_KEY_WKWatchKitApp = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.robertapolk.Aptus.watchkitapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchsimulator watchos";
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Release;
+		};
+		93F3DC4B74E6290016C2B8D4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 3;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		9DB483E87E6A7B2CBAA93151 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Aptus/Aptus.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 16;
+				DEVELOPMENT_TEAM = 523MJL63MC;
+				INFOPLIST_FILE = Aptus/Info.plist;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.robertapolk.Aptus;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		CB2198D0A7E561C56F341152 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Aptus/Aptus.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 16;
+				DEVELOPMENT_TEAM = 523MJL63MC;
+				INFOPLIST_FILE = Aptus/Info.plist;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.robertapolk.Aptus;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		CE5AD4F48E3EA1DC888BCC7F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 3;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		07702932D62A7C80928D1817 /* Build configuration list for PBXNativeTarget "Aptus Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0358EAC616ECD5CEF018EA04 /* Debug */,
+				2318511BD36B716AAE9F86EB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		14DFA87298869ADE1DE83C15 /* Build configuration list for PBXProject "Aptus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CE5AD4F48E3EA1DC888BCC7F /* Debug */,
+				93F3DC4B74E6290016C2B8D4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		843C024216CA97DFE787C8EF /* Build configuration list for PBXNativeTarget "Aptus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB2198D0A7E561C56F341152 /* Debug */,
+				9DB483E87E6A7B2CBAA93151 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A4AD81C4959221C8BCEEC3A1 /* Project object */;
+}

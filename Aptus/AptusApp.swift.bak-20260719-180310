@@ -1,0 +1,20 @@
+//
+//  AptusApp.swift
+//  Aptus
+//
+
+import SwiftUI
+
+@main
+struct AptusApp: App {
+    // Single shared HealthKit + engine host. HealthKitManager owns the on-device
+    // LongevityEngine and RecoveryEngine and exposes their reports. Authorization
+    // continues to flow through this existing manager.
+    @StateObject private var healthKitManager = HealthKitManager()
+
+    var body: some Scene {
+        WindowGroup {
+            PhoneDashboardView(hkManager: healthKitManager)
+        }
+    }
+}

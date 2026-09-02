@@ -1,0 +1,140 @@
+# =============================================================================
+#  XcodeGen project manifest for APTUS
+#
+#  This file is the single source of truth for the Xcode project. It replaces
+#  all the manual Xcode setup (bundle IDs, Embed & Sign, target dependencies,
+#  capabilities, app icons) that previously had to be done by hand.
+#
+#  To (re)generate the Xcode project:
+#     brew install xcodegen        # one time
+#     cd ios && xcodegen generate   # produces Aptus.xcodeproj in ~1s
+#
+#  Then open Aptus.xcodeproj in Xcode, set your DEVELOPMENT_TEAM below (or in
+#  Xcode's Signing & Capabilities), select the "Aptus" scheme with a paired
+#  "iPhone + Apple Watch Ultra" destination, and Run.
+# =============================================================================
+
+name: Aptus
+options:
+  bundleIdPrefix: com.robertapolk
+  deploymentTarget:
+    iOS: "17.0"
+    watchOS: "10.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: ""          # <-- set your Apple Developer Team ID here
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "3"
+    SWIFT_VERSION: "5.9"
+    ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+    CODE_SIGN_STYLE: Automatic
+
+# -----------------------------------------------------------------------------
+# iOS app target  (the "delivery vehicle" — it embeds the Watch app)
+# -----------------------------------------------------------------------------
+targets:
+  Aptus:
+    type: application
+    platform: iOS
+    sources:
+      - path: Aptus
+      - path: Shared                # ConnectivityManager.swift lives here, shared by both targets
+    resources:
+      - path: Aptus/Resources/Assets.xcassets
+    dependencies:
+      # The watchOS app is a non-watch-only COMPANION app (WKWatchOnly: false).
+      # In the modern (watchOS 7+) architecture a companion Watch app is EMBEDDED
+      # inside the iOS app so that installing the iPhone app on a paired iPhone
+      # installs the Watch app as its registered companion. This is what makes
+      # WCSession.isWatchAppInstalled return true on the iPhone. (Legacy watchOS 1–5
+      # embedding-as-extension is a different thing; WKApplication: true is unaffected.)
+      # The system frameworks below stay embed: false — only the Watch app embeds.
+      - target: Aptus Watch App
+        embed: true
+      - sdk: HealthKit.framework
+        embed: false
+      - sdk: WatchConnectivity.framework
+        embed: false
+    info:
+      path: Aptus/Info.plist
+      properties:
+        CFBundleDisplayName: AptusHealth
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen:
+          {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        # HealthKit privacy strings (required or the app silently gets no data)
+        NSHealthShareUsageDescription: "APTUS reads your Heart Rate Variability, Sleep, Resting Heart Rate, and VO2 Max to analyze training recovery."
+        NSHealthUpdateUsageDescription: "APTUS writes workout and recovery data back to HealthKit."
+        # Declares the watch companion app so the iPhone's WatchConnectivity session
+        # recognizes the paired watch app. Without this, isWatchAppInstalled stays false
+        # and the iPhone never sends coaching to / receives biometrics from the watch.
+        WKWatchAppBundleIdentifier: com.robertapolk.Aptus.watchkitapp
+        # Allow the local dev server IP (http://192.168.x.x) without disabling HTTPS
+        # protections for the production HTTPS backend.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        ITSAppUsesNonExemptEncryption: false
+    entitlements:
+      path: Aptus/Aptus.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        com.apple.developer.healthkit.background-delivery: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.robertapolk.Aptus
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+
+  # ---------------------------------------------------------------------------
+  # watchOS app target  (live workout telemetry; streams biometrics to Phone)
+  # ---------------------------------------------------------------------------
+  Aptus Watch App:
+    type: application
+    platform: watchOS
+    sources:
+      - path: Aptus Watch App
+      - path: Shared
+      - path: Aptus/Engines/LiveCoachingEngine.swift
+    resources:
+      - path: Aptus Watch App/Resources/Assets.xcassets
+    dependencies:
+      - sdk: HealthKit.framework
+        embed: false
+      - sdk: WatchConnectivity.framework
+        embed: false
+    info:
+      path: Aptus Watch App/Info.plist
+      properties:
+        CFBundleDisplayName: AptusHealth
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        WKApplication: true
+        WKWatchOnly: false
+        WKCompanionAppBundleIdentifier: com.robertapolk.Aptus
+        # Keep the workout sensor alive in the background during a session.
+        WKBackgroundModes:
+          - workout-processing
+        # HealthKit privacy strings (required — without these the system
+        # blocks/crashes the authorization request).
+        NSHealthShareUsageDescription: "APTUS reads your heart rate and workout data to display live telemetry during exercise."
+        NSHealthUpdateUsageDescription: "APTUS writes workout, heart rate, distance, and active energy data back to HealthKit."
+    entitlements:
+      path: Aptus Watch App/AptusWatch.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.robertapolk.Aptus.watchkitapp
+        SDKROOT: watchos
+        SUPPORTED_PLATFORMS: "watchsimulator watchos"
+        INFOPLIST_KEY_WKWatchKitApp: "NO"

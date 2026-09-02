@@ -1,0 +1,134 @@
+//
+//  EvidenceLibrary.swift
+//  Aptus
+//
+//  Single source of truth for the evidence-backed biomarker thresholds and their
+//  peer-reviewed citations. Engines and views both read from here so a threshold is
+//  cited from exactly one place (deduplicating the URLs previously hardcoded in
+//  LongevityEngine / PatternDetectorEngine).
+//
+//  COMPLIANCE (App Store Guideline 1.4): every `url` points to a real, peer-reviewed
+//  source. No citations are fabricated. Entries are seeded verbatim from the URLs
+//  already used in `LongevityEngine`; see PHASE4_INTEGRATION.md for provenance.
+//
+
+import Foundation
+
+/// One evidence-backed biomarker threshold and its citation.
+public struct EvidenceEntry: Identifiable, Hashable {
+    /// Stable id — aligns with the biomarker ids used in `LongevityEngine`/`RecoveryEngine`
+    /// (e.g. "vo2Max", "hrvSDNN") so callers can look an entry up by the metric they show.
+    public let id: String
+    /// Display biomarker name used for grouping in the UI.
+    public let biomarker: String
+    /// Short source/citation title (author, journal, year).
+    public let title: String
+    /// One-line threshold summary (the "what").
+    public let thresholdSummary: String
+    /// Plain-language "why this matters" (non-medical, wellness framing).
+    public let detail: String
+    /// Real, peer-reviewed source URL.
+    public let url: URL
+
+    public init(id: String, biomarker: String, title: String,
+                thresholdSummary: String, detail: String, urlString: String) {
+        self.id = id
+        self.biomarker = biomarker
+        self.title = title
+        self.thresholdSummary = thresholdSummary
+        self.detail = detail
+        // Force-unwrap is safe: every URL below is a validated compile-time literal.
+        self.url = URL(string: urlString)!
+    }
+}
+
+public enum EvidenceLibrary {
+
+    /// All evidence entries, ordered by evidence weight (matches LongevityEngine order).
+    public static let all: [EvidenceEntry] = [
+        EvidenceEntry(
+            id: "vo2Max",
+            biomarker: "VO₂ Max",
+            title: "Fraser et al., Br J Sports Med, 2024",
+            thresholdSummary: "Higher cardiorespiratory fitness → lower all-cause mortality (HR 0.47 highest vs lowest; ~14% lower risk per +1 MET).",
+            detail: "VO₂ max is the single strongest consumer-measurable marker of long-term health here. Building aerobic fitness — even modestly — is associated with meaningfully lower mortality risk.",
+            urlString: "https://pmc.ncbi.nlm.nih.gov/articles/PMC11103301/"),
+        EvidenceEntry(
+            id: "hrvSDNN",
+            biomarker: "Heart Rate Variability",
+            title: "Jarczok et al., Neurosci Biobehav Rev, 2022",
+            thresholdSummary: "Lowest HRV quartile → all-cause mortality HR 1.56 (1.32–1.85).",
+            detail: "Higher heart-rate variability reflects a more adaptable, well-recovered autonomic nervous system. Sleep, stress management and consistent training tend to support it over time.",
+            urlString: "https://linkinghub.elsevier.com/retrieve/pii/S0149763422003967"),
+        EvidenceEntry(
+            id: "restingHR",
+            biomarker: "Resting Heart Rate",
+            title: "Aune et al., Nutr Metab Cardiovasc Dis, 2017",
+            thresholdSummary: "Each +10 bpm resting HR → all-cause mortality RR 1.17 (1.14–1.19).",
+            detail: "A lower resting heart rate generally indicates a stronger, more efficient cardiovascular system. Aerobic activity and good sleep are the habits most associated with lowering it.",
+            urlString: "https://linkinghub.elsevier.com/retrieve/pii/S0939475317300856"),
+        EvidenceEntry(
+            id: "sleepHours",
+            biomarker: "Sleep Duration",
+            title: "Ungvari et al., GeroScience, 2025",
+            thresholdSummary: "U-shaped mortality: <7h HR ~1.14, ≥9h HR ~1.34 vs 7–8h.",
+            detail: "Both too little and too much sleep associate with higher mortality — the sweet spot is roughly 7–8 hours. Consistent sleep and wake times help you land there.",
+            urlString: "https://link.springer.com/10.1007/s11357-025-01592-y"),
+        EvidenceEntry(
+            id: "heartRateRecovery",
+            biomarker: "Heart-Rate Recovery",
+            title: "Cole et al. (threshold ≤12 bpm); Fraser et al. 2024",
+            thresholdSummary: "Faster 1-minute HR drop after exercise → better autonomic health (attenuated recovery ≤12 bpm predicts higher mortality).",
+            detail: "How quickly your heart rate falls in the minute after exercise reflects how well your nervous system bounces back. A larger drop is generally a good sign of fitness.",
+            urlString: "https://pmc.ncbi.nlm.nih.gov/articles/PMC11103301/"),
+        EvidenceEntry(
+            id: "walkingSpeed",
+            biomarker: "Walking Speed",
+            title: "Studenski et al., JAMA 2011; Perera et al. 2024",
+            thresholdSummary: "Each +0.1 m/s gait speed → ~23–25% lower mortality.",
+            detail: "Usual walking speed is a simple, powerful indicator of overall vitality and mobility. Strength and aerobic work both help maintain it as you age.",
+            urlString: "https://pmc.ncbi.nlm.nih.gov/articles/PMC3080184/"),
+        EvidenceEntry(
+            id: "steps",
+            biomarker: "Daily Steps",
+            title: "Lee et al., JAMA Intern Med",
+            thresholdSummary: "Higher daily step counts → progressively lower all-cause mortality.",
+            detail: "More daily steps are consistently linked with lower mortality, with benefits accruing well before the popular 10,000-step figure. Any increase helps.",
+            urlString: "https://pmc.ncbi.nlm.nih.gov/articles/PMC2951585/"),
+        EvidenceEntry(
+            id: "exerciseMinutes",
+            biomarker: "Exercise Minutes",
+            title: "Fraser et al., Br J Sports Med, 2024",
+            thresholdSummary: "Meeting activity guidelines (~≥30 min/day moderate) → substantially lower mortality.",
+            detail: "Regular moderate activity — around 30 minutes most days — is one of the most reliably beneficial habits for long-term health.",
+            urlString: "https://pmc.ncbi.nlm.nih.gov/articles/PMC11103301/"),
+        EvidenceEntry(
+            id: "appleHeartStudy",
+            biomarker: "Atrial Fibrillation",
+            title: "Apple Heart Study",
+            thresholdSummary: "Irregular pulse notification PPV 0.84",
+            detail: "In the large-scale Apple Heart Study, an irregular-pulse notification agreed with a simultaneous ECG patch 84% of the time. An occasional irregular reading is informational, not a diagnosis — bring persistent irregularity to a clinician.",
+            urlString: "https://pmc.ncbi.nlm.nih.gov/articles/PMC8112605/")
+    ]
+
+    /// Look up a single entry by its biomarker id (nil if not evidence-backed here).
+    public static func entry(for id: String) -> EvidenceEntry? {
+        all.first { $0.id == id }
+    }
+
+    /// Convenience: the entries relevant to each score surface.
+    public static func entries(ids: [String]) -> [EvidenceEntry] {
+        ids.compactMap { entry(for: $0) }
+    }
+
+    // Named groupings used by the score views so each surface cites the right subset.
+    public static let longevityIDs = ["vo2Max", "hrvSDNN", "restingHR", "sleepHours",
+                                      "heartRateRecovery", "walkingSpeed", "steps", "exerciseMinutes"]
+    public static let recoveryIDs = ["hrvSDNN", "restingHR", "sleepHours"]
+    public static let fitnessIDs = ["vo2Max", "heartRateRecovery", "exerciseMinutes", "steps"]
+
+    /// Evidence behind the on-device pattern detectors (incl. the Apple Heart Study
+    /// backing the AFib-burden signal).
+    public static let patternIDs = ["hrvSDNN", "restingHR", "sleepHours", "vo2Max",
+                                    "heartRateRecovery", "steps", "appleHeartStudy"]
+}

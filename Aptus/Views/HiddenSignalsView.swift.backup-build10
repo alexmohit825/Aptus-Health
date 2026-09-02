@@ -1,0 +1,206 @@
+//
+//  HiddenSignalsView.swift
+//  Aptus
+//
+//  Surfaces the "hidden" Apple Watch / HealthKit metrics that Apple's own Health UI
+//  buries or omits — SpO2, wrist temperature, respiratory rate, walking steadiness,
+//  6-minute walk, AFib burden, daylight/UV, environmental sound, HRR, and more.
+//  Each card shows the metric name, current value + unit, a trend arrow, and a
+//  plain-language "what this means" line. Cards are grouped by category.
+//
+//  COMPLIANCE (App Store Guideline 1.4): informational wellness estimates only —
+//  not a diagnosis or medical device.
+//
+
+import SwiftUI
+
+struct HiddenSignalsView: View {
+    @ObservedObject var hkManager: HealthKitManager
+
+    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                header
+
+                Group {
+                    if hkManager.hiddenSignals.isEmpty {
+                        emptyState
+                    } else {
+                        ForEach(orderedCategories, id: \.self) { category in
+                            let signals = hkManager.hiddenSignals.filter { $0.category == category }
+                            if !signals.isEmpty {
+                                categorySection(category, signals)
+                            }
+                        }
+                    }
+                }
+                .proLocked("Hidden Signals")
+
+                disclaimer
+            }
+            .padding()
+        }
+        .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
+        .navigationTitle("Hidden Signals")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if hkManager.hiddenSignals.isEmpty {
+                hkManager.refreshHiddenSignalsAndPatterns()
+            }
+        }
+    }
+
+    // MARK: Sections
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("BEYOND THE RINGS")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundColor(.gray)
+            Text("Hidden Signals")
+                .font(.largeTitle)
+                .fontWeight(.black)
+            Text("Metrics your Apple Watch quietly records — surfaced with a plain-language read on what each one means.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private var orderedCategories: [HiddenSignal.Category] {
+        [.cardiovascular, .sleep, .respiratory, .mobility, .environmental]
+    }
+
+    private func categorySection(_ category: HiddenSignal.Category, _ signals: [HiddenSignal]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: icon(for: category))
+                    .foregroundColor(tint(for: category))
+                Text(category.rawValue)
+                    .font(.headline)
+            }
+            LazyVGrid(columns: columns, spacing: 12) {
+                ForEach(signals) { signal in
+                    card(signal, tint: tint(for: category))
+                }
+            }
+        }
+    }
+
+    private func card(_ signal: HiddenSignal, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(signal.name)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer()
+                Image(systemName: signal.trend.symbolName)
+                    .font(.caption)
+                    .foregroundColor(trendColor(signal.trend))
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(valueString(signal.value))
+                    .font(.system(size: 26, weight: .black, design: .rounded))
+                    .foregroundColor(.primary)
+                Text(signal.unit)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Text(signal.meaning)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let url = signal.evidenceURL {
+                Link(destination: url) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "book")
+                        Text("Evidence")
+                    }
+                    .font(.caption2)
+                    .foregroundColor(.blue)
+                }
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
+        .background(Color(uiColor: .systemBackground))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16).stroke(tint.opacity(0.25), lineWidth: 1)
+        )
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "waveform.path.ecg")
+                .font(.title)
+                .foregroundColor(.indigo)
+            Text("No hidden signals yet")
+                .font(.headline)
+            Text("Wear your Apple Watch (including overnight) and these metrics will populate as data syncs.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(Color(uiColor: .systemBackground))
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+    }
+
+    private var disclaimer: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "exclamationmark.shield")
+                .foregroundColor(.secondary)
+            Text("Informational wellness estimates only — not a diagnosis or medical device. Values depend on sensor fit and wear time.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(uiColor: .secondarySystemBackground))
+        .cornerRadius(12)
+    }
+
+    // MARK: Helpers
+
+    private func valueString(_ v: Double) -> String {
+        if v >= 1000 { return String(format: "%.0f", v) }
+        if v == v.rounded() { return String(format: "%.0f", v) }
+        if v >= 100 { return String(format: "%.0f", v) }
+        if v >= 10 { return String(format: "%.1f", v) }
+        return String(format: "%.2f", v)
+    }
+
+    // Neutral coloring: a trend arrow conveys direction only. Whether "up" is good
+    // or bad depends on the metric (RHR up ≠ HRV up), so we avoid implying valence.
+    private func trendColor(_ trend: HiddenSignal.Trend) -> Color { .secondary }
+
+    private func icon(for category: HiddenSignal.Category) -> String {
+        switch category {
+        case .cardiovascular: return "heart.fill"
+        case .sleep:          return "bed.double.fill"
+        case .respiratory:    return "lungs.fill"
+        case .mobility:       return "figure.walk"
+        case .environmental:  return "sun.max.fill"
+        }
+    }
+
+    private func tint(for category: HiddenSignal.Category) -> Color {
+        switch category {
+        case .cardiovascular: return .red
+        case .sleep:          return .purple
+        case .respiratory:    return .cyan
+        case .mobility:       return .green
+        case .environmental:  return .orange
+        }
+    }
+}

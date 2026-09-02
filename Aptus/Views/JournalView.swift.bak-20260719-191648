@@ -1,0 +1,332 @@
+//
+//  JournalView.swift
+//  Aptus
+//
+//  The private wellness journal. Reverse-chronological list of entries; each row shows
+//  the note text, its mood/state tags, and (if captured) that day's app scores. Add or
+//  edit via a sheet with free text + tappable tag chips. Swipe to delete.
+//
+//  COMPLIANCE (App Store Guideline 1.4): "Your private notes." Personal, wellness-only.
+//  No medical interpretation of anything the user writes.
+//
+
+import SwiftUI
+
+struct JournalView: View {
+    @ObservedObject var hkManager: HealthKitManager
+    @ObservedObject private var store = JournalStore.shared
+
+    @State private var editing: JournalEntry?
+    @State private var showingAdd = false
+
+    var body: some View {
+        List {
+            if store.entries.isEmpty {
+                emptyState
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            } else {
+                ForEach(store.entries) { entry in
+                    Button {
+                        editing = entry
+                    } label: {
+                        row(entry)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .onDelete { store.delete(at: $0) }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle("Journal")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showingAdd = true } label: {
+                    Image(systemName: "square.and.pencil")
+                }
+            }
+        }
+        .sheet(isPresented: $showingAdd) {
+            JournalEntryEditor(entry: nil, snapshot: hkManager.currentScoreSnapshot()) { newEntry in
+                store.add(newEntry)
+            }
+        }
+        .sheet(item: $editing) { entry in
+            JournalEntryEditor(entry: entry, snapshot: entry.metricsSnapshot) { updated in
+                store.update(updated)
+            }
+        }
+    }
+
+    // MARK: Row
+
+    private func row(_ entry: JournalEntry) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(entry.date, format: .dateTime.weekday().month().day().hour().minute())
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            if !entry.text.isEmpty {
+                Text(entry.text)
+                    .font(.body)
+                    .foregroundColor(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if !entry.tags.isEmpty {
+                TagChipRow(tags: entry.tags)
+            }
+
+            if let snap = entry.metricsSnapshot {
+                snapshotRow(snap)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func snapshotRow(_ snap: JournalMetricsSnapshot) -> some View {
+        HStack(spacing: 14) {
+            scorePill("Longevity", snap.longevityScore, .teal)
+            scorePill("Recovery", snap.recoveryScore, .green)
+            scorePill("Fitness", snap.fitnessScore, .orange)
+        }
+        .padding(.top, 2)
+    }
+
+    private func scorePill(_ label: String, _ value: Int, _ tint: Color) -> some View {
+        VStack(spacing: 1) {
+            Text("\(value)")
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .foregroundColor(tint)
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "book.closed")
+                .font(.title)
+                .foregroundColor(.teal)
+            Text("Your private notes")
+                .font(.headline)
+            Text("Jot down how you feel each day — tired, sore, energized. Optionally attach that day's scores to spot your own patterns over time.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+    }
+}
+
+// MARK: - Add / edit sheet
+
+struct JournalEntryEditor: View {
+    /// nil → creating a new entry; non-nil → editing an existing one.
+    let entry: JournalEntry?
+    /// Snapshot offered for a NEW entry (today's scores); editing keeps the stored one.
+    let snapshot: JournalMetricsSnapshot?
+    let onSave: (JournalEntry) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var text: String
+    @State private var tags: [String]
+    @State private var attachSnapshot: Bool
+    @State private var customTag: String = ""
+
+    init(entry: JournalEntry?,
+         snapshot: JournalMetricsSnapshot?,
+         onSave: @escaping (JournalEntry) -> Void) {
+        self.entry = entry
+        self.snapshot = snapshot
+        self.onSave = onSave
+        _text = State(initialValue: entry?.text ?? "")
+        _tags = State(initialValue: entry?.tags ?? [])
+        // New entry with a snapshot available → default to attaching it.
+        _attachSnapshot = State(initialValue: entry?.metricsSnapshot != nil || (entry == nil && snapshot != nil))
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("How are you feeling?") {
+                    TextEditor(text: $text)
+                        .frame(minHeight: 120)
+                }
+
+                Section("Tags") {
+                    TagSelector(selected: $tags,
+                                suggestions: JournalStore.suggestedTags)
+                    HStack {
+                        TextField("Add your own tag", text: $customTag)
+                            .textInputAutocapitalization(.never)
+                        Button("Add") { addCustomTag() }
+                            .disabled(customTag.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+
+                if snapshot != nil {
+                    Section {
+                        Toggle("Attach today's scores", isOn: $attachSnapshot)
+                    } footer: {
+                        Text("Saves your Longevity, Recovery and Fitness scores with this note so you can notice personal patterns later. Private to you.")
+                    }
+                }
+            }
+            .navigationTitle(entry == nil ? "New Entry" : "Edit Entry")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }
+                        .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty && tags.isEmpty)
+                }
+            }
+        }
+    }
+
+    private func addCustomTag() {
+        let t = customTag.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !t.isEmpty, !tags.contains(t) else { customTag = ""; return }
+        tags.append(t)
+        customTag = ""
+    }
+
+    private func save() {
+        let snap = attachSnapshot ? (entry?.metricsSnapshot ?? snapshot) : nil
+        let result = JournalEntry(
+            id: entry?.id ?? UUID(),
+            date: entry?.date ?? Date(),
+            text: text.trimmingCharacters(in: .whitespacesAndNewlines),
+            tags: tags,
+            metricsSnapshot: snap
+        )
+        onSave(result)
+        dismiss()
+    }
+}
+
+// MARK: - Tag UI
+
+/// Selectable chips + any custom tags already chosen.
+struct TagSelector: View {
+    @Binding var selected: [String]
+    let suggestions: [String]
+
+    private var allTags: [String] {
+        // Suggestions first, then any custom tags the user already added.
+        suggestions + selected.filter { !suggestions.contains($0) }
+    }
+
+    var body: some View {
+        FlowChips(items: allTags) { tag in
+            let isOn = selected.contains(tag)
+            Button {
+                if isOn { selected.removeAll { $0 == tag } }
+                else { selected.append(tag) }
+            } label: {
+                chip(tag, isOn: isOn)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func chip(_ tag: String, isOn: Bool) -> some View {
+        Text(tag)
+            .font(.caption)
+            .fontWeight(.semibold)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(isOn ? Color.teal : Color(uiColor: .secondarySystemBackground))
+            .foregroundColor(isOn ? .white : .primary)
+            .clipShape(Capsule())
+    }
+}
+
+/// Read-only chip row used on journal list rows.
+struct TagChipRow: View {
+    let tags: [String]
+    var body: some View {
+        FlowChips(items: tags) { tag in
+            Text(tag)
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Color.teal.opacity(0.15))
+                .foregroundColor(.teal)
+                .clipShape(Capsule())
+        }
+    }
+}
+
+/// Minimal wrapping chip layout (no third-party deps). Uses SwiftUI `Layout` on the
+/// iOS 18+ deployment target.
+struct FlowChips<Content: View>: View {
+    let items: [String]
+    let content: (String) -> Content
+
+    init(items: [String], @ViewBuilder content: @escaping (String) -> Content) {
+        self.items = items
+        self.content = content
+    }
+
+    var body: some View {
+        FlowLayout(spacing: 8) {
+            ForEach(items, id: \.self) { content($0) }
+        }
+    }
+}
+
+/// A simple flow (wrapping) layout.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var rowWidth: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var totalHeight: CGFloat = 0
+        var totalWidth: CGFloat = 0
+
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if rowWidth + size.width > maxWidth, rowWidth > 0 {
+                totalHeight += rowHeight + spacing
+                totalWidth = max(totalWidth, rowWidth - spacing)
+                rowWidth = 0
+                rowHeight = 0
+            }
+            rowWidth += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        totalHeight += rowHeight
+        totalWidth = max(totalWidth, rowWidth - spacing)
+        return CGSize(width: min(totalWidth, maxWidth), height: totalHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let maxX = bounds.maxX
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if x + size.width > maxX, x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            view.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+    }
+}

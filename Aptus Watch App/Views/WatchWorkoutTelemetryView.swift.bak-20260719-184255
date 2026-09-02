@@ -1,0 +1,152 @@
+//
+//  WatchWorkoutTelemetryView.swift
+//  Aptus Watch App
+//
+//  Created by WatchOS Biometric Streams
+//
+//  PHASE 2: recovery-informed live coaching layered on top of the existing
+//  telemetry. Today's Recovery band (pushed from the phone via WatchConnectivity,
+//  or selected here for standalone testing) sets the recommended HR-zone band;
+//  live HR is compared against it by the shared `LiveCoachingEngine` to produce a
+//  coaching cue. Existing HR / pace / time telemetry and the +/- simulation are
+//  preserved.
+//
+//  NOTE: add `LiveCoachingEngine.swift` to the Watch App target so this compiles.
+//
+//  COMPLIANCE (App Store Guideline 1.4): coaching cues are fitness guidance, not
+//  medical advice.
+//
+
+import SwiftUI
+import HealthKit
+
+struct WatchWorkoutTelemetryView: View {
+    @State private var heartRate: Double = 142.0
+    @State private var pace: String = "5:12 /km"
+    @State private var activeMinutes: Int = 22
+
+    // Today's recovery band. In production this is pushed from the phone via
+    // WatchConnectivity; the picker lets the watch run standalone in testing.
+    @State private var recoveryBand: RecoveryBand = .yellow
+
+    private let engine = LiveCoachingEngine()
+    // Age is not read from HealthKit on the watch here; 40 is a safe default that
+    // the phone can override via WatchConnectivity alongside the recovery band.
+    private let zones = HRZones(age: 40)
+
+    private var cue: CoachingCue {
+        engine.cue(recovery: recoveryBand, heartRate: heartRate, zones: zones)
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                // Heart Rate Ring
+                HStack {
+                    Image(systemName: "heart.fill")
+                        .foregroundColor(.red)
+                        .scaleEffect(1.2)
+                    Text("\(Int(heartRate))")
+                        .font(.system(.title3, design: .rounded))
+                        .fontWeight(.bold)
+                    Text("BPM")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+
+                // Pace and Duration
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading) {
+                        Text("PACE")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.gray)
+                        Text(pace)
+                            .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                    }
+                    VStack(alignment: .leading) {
+                        Text("TIME")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.gray)
+                        Text("\(activeMinutes)m 12s")
+                            .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                    }
+                }
+                .padding(.vertical, 4)
+
+                // Recovery-informed target band + current zone.
+                Text("Recovery: \(recoveryBand.rawValue)  ·  Target Z\(cue.targetZoneLow)–Z\(cue.targetZoneHigh)")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.gray)
+                Text("Now: Zone \(cue.currentZone)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(cueColor)
+
+                // Live recovery-informed coaching cue on Watch.
+                VStack(spacing: 2) {
+                    Text(cue.action.rawValue)
+                        .font(.caption)
+                        .fontWeight(.black)
+                        .foregroundColor(.black)
+                    Text(cue.message)
+                        .font(.system(size: 10))
+                        .foregroundColor(.black)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(cueColor)
+                .cornerRadius(8)
+
+                // Controls to simulate Watch data.
+                HStack {
+                    Button(action: {
+                        heartRate = min(190, heartRate + 5)
+                        updatePace()
+                    }) {
+                        Image(systemName: "plus")
+                    }
+                    Spacer()
+                    Button(action: {
+                        heartRate = max(90, heartRate - 5)
+                        updatePace()
+                    }) {
+                        Image(systemName: "minus")
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 12)
+
+                // Standalone recovery-band selector (simulates the phone push).
+                Picker("Recovery", selection: $recoveryBand) {
+                    Text("Green").tag(RecoveryBand.green)
+                    Text("Yellow").tag(RecoveryBand.yellow)
+                    Text("Red").tag(RecoveryBand.red)
+                }
+                .pickerStyle(.navigationLink)
+                .font(.caption2)
+            }
+            .padding()
+        }
+    }
+
+    /// Keeps the existing pace readout responsive to intensity changes.
+    private func updatePace() {
+        switch cue.currentZone {
+        case 5: pace = "5:45 /km"
+        case 4: pace = "4:40 /km"
+        case 3: pace = "5:15 /km"
+        case 2: pace = "5:55 /km"
+        default: pace = "6:30 /km"
+        }
+    }
+
+    private var cueColor: Color {
+        switch cue.colorHint {
+        case "green": return .green
+        case "yellow": return .yellow
+        case "red": return .red
+        case "blue": return .blue
+        default: return .gray
+        }
+    }
+}

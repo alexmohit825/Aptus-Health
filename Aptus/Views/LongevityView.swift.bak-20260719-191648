@@ -1,0 +1,285 @@
+//
+//  LongevityView.swift
+//  Aptus
+//
+//  Headline SwiftUI view for the Longevity Drift Score. Shows the overall score
+//  prominently plus a per-biomarker panel; each row is tappable to reveal the
+//  cited study, effect size, and a link to the source.
+//
+//  COMPLIANCE (App Store Guideline 1.4): wellness framing only — this is an
+//  informational estimate, not a diagnosis or medical device.
+//
+
+import SwiftUI
+
+struct LongevityView: View {
+    @ObservedObject var hkManager: HealthKitManager
+    @State private var selectedBiomarker: BiomarkerResult?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                header
+
+                if let report = hkManager.longevityReport {
+                    scoreCard(report)
+                    if let insight = hkManager.narrativeInsight {
+                        NarrativeInsightCard(insight: insight)
+                    }
+                    biomarkerPanel(report)
+                    EvidenceSection(ids: EvidenceLibrary.longevityIDs)
+                    disclaimer(report.disclaimer)
+                } else {
+                    emptyState
+                }
+            }
+            .padding()
+        }
+        .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
+        .navigationTitle("Longevity")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $selectedBiomarker) { biomarker in
+            EvidenceDetailView(biomarker: biomarker)
+        }
+        .onAppear {
+            if hkManager.longevityReport == nil {
+                hkManager.computeEngineReports()
+            } else if hkManager.narrativeInsight == nil {
+                hkManager.refreshNarrative()
+            }
+        }
+    }
+
+    // MARK: Sections
+
+    private var header: some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text("LONGEVITY INSIGHT")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.gray)
+                Text("Drift Score")
+                    .font(.largeTitle)
+                    .fontWeight(.black)
+            }
+            Spacer()
+            Image(systemName: "infinity")
+                .font(.system(size: 35))
+                .foregroundColor(.teal)
+        }
+        .padding(.top)
+    }
+
+    private func scoreCard(_ report: LongevityReport) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Estimated Longevity Drift")
+                    .font(.headline)
+                Spacer()
+                Text("\(Int(report.overallScore.rounded()))")
+                    .font(.system(size: 44, weight: .black, design: .rounded))
+                    .foregroundColor(scoreColor(report.overallScore))
+                Text("/100")
+                    .font(.title3)
+                    .foregroundColor(.secondary)
+            }
+            ProgressView(value: report.overallScore, total: 100)
+                .tint(scoreColor(report.overallScore))
+            Text(scoreCaption(report.overallScore))
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color(uiColor: .systemBackground))
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+    }
+
+    private func biomarkerPanel(_ report: LongevityReport) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Biomarkers")
+                .font(.headline)
+            ForEach(report.biomarkers) { bio in
+                Button(action: { selectedBiomarker = bio }) {
+                    biomarkerRow(bio)
+                }
+                .buttonStyle(.plain)
+                if bio.id != report.biomarkers.last?.id {
+                    Divider()
+                }
+            }
+        }
+        .padding()
+        .background(Color(uiColor: .systemBackground))
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+    }
+
+    private func biomarkerRow(_ bio: BiomarkerResult) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: bio.trend.symbolName)
+                .foregroundColor(trendColor(bio.trend))
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(bio.name)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                Text("\(formatted(bio.userValue)) \(bio.unit)  ·  norm \(formatted(bio.ageNorm))")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(Int(bio.subScore.rounded()))")
+                    .font(.headline)
+                    .foregroundColor(scoreColor(bio.subScore))
+                Image(systemName: "info.circle")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .contentShape(Rectangle())
+    }
+
+    private func disclaimer(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "exclamationmark.shield")
+                .foregroundColor(.secondary)
+            Text(text)
+                .font(.footnote)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(uiColor: .secondarySystemBackground))
+        .cornerRadius(12)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "infinity")
+                .font(.title)
+                .foregroundColor(.teal)
+            Text("Authorize Apple Health and sync to generate your estimated Longevity Drift Score.")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(Color(uiColor: .systemBackground))
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+    }
+
+    // MARK: Helpers
+
+    private func scoreColor(_ s: Double) -> Color {
+        switch s {
+        case ..<50: return .red
+        case 50..<75: return .orange
+        default: return .green
+        }
+    }
+
+    private func scoreCaption(_ s: Double) -> String {
+        switch s {
+        case ..<50: return "Several markers are below your age-adjusted reference. An informational signal to review with a professional."
+        case 50..<75: return "A solid profile with room to improve on some markers versus your age-adjusted norms."
+        default: return "Your markers are strong relative to age-adjusted norms and your personal baseline."
+        }
+    }
+
+    private func trendColor(_ t: BiomarkerTrend) -> Color {
+        switch t {
+        case .improving: return .green
+        case .stable: return .secondary
+        case .declining: return .orange
+        }
+    }
+
+    private func formatted(_ v: Double) -> String {
+        if v >= 1000 { return String(format: "%.0f", v) }
+        if v == v.rounded() { return String(format: "%.0f", v) }
+        return String(format: "%.1f", v)
+    }
+}
+
+// MARK: - Evidence detail sheet
+
+struct EvidenceDetailView: View {
+    let biomarker: BiomarkerResult
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(spacing: 12) {
+                        Image(systemName: biomarker.trend.symbolName)
+                            .font(.title2)
+                        Text(biomarker.name)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                    }
+
+                    valueRow("Your recent value", "\(fmt(biomarker.userValue)) \(biomarker.unit)")
+                    valueRow("21-day baseline", "\(fmt(biomarker.baselineValue)) \(biomarker.unit)")
+                    valueRow("Age-adjusted norm", "\(fmt(biomarker.ageNorm)) \(biomarker.unit)")
+                    valueRow("Sub-score", "\(Int(biomarker.subScore.rounded())) / 100")
+                    valueRow("Trend", biomarker.trend.rawValue)
+
+                    Divider()
+
+                    Text("Evidence")
+                        .font(.headline)
+                    Text(biomarker.evidenceCitation)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                    if let url = URL(string: biomarker.evidenceURL) {
+                        Link(destination: url) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "link")
+                                Text("View source study")
+                            }
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        }
+                    }
+
+                    Divider()
+
+                    Text("Informational wellness estimate — not a diagnosis or medical device. Age-adjusted norms are population approximations and should be reviewed with a physician.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+            }
+            .navigationTitle("Insight Detail")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func valueRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label).foregroundColor(.secondary)
+            Spacer()
+            Text(value).fontWeight(.semibold)
+        }
+        .font(.subheadline)
+    }
+
+    private func fmt(_ v: Double) -> String {
+        if v >= 1000 { return String(format: "%.0f", v) }
+        if v == v.rounded() { return String(format: "%.0f", v) }
+        return String(format: "%.1f", v)
+    }
+}

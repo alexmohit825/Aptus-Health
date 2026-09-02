@@ -1,0 +1,518 @@
+//
+//  PhoneDashboardView.swift
+//  Aptus
+//
+//  Created by iOS Mobile Client Engineering
+//
+
+import SwiftUI
+
+struct PhoneDashboardView: View {
+    @ObservedObject var hkManager: HealthKitManager
+    @ObservedObject private var journal = JournalStore.shared
+    @State private var coachingResponse: String = "Sync your Watch biometrics to generate your recovery plan."
+    @State private var recoveryScore: Int = 0
+    @State private var planAdjust: String = "Original Plan: 10k Aerobic Interval"
+    @State private var targetZone: String = "Zone 2"
+    @State private var isLoading: Bool = false
+    
+    // --- SERVER URL CONFIGURATION ---
+    // Option A: Cloud Dev Server (Requires browser authentication cookies; might trigger 302 redirects to __cookie_check.html if requested directly from a native iOS app)
+    // let serverURL = "https://ais-dev-to6bwfg55gkonhk43ukpce-284658191881.us-east5.run.app"
+    
+    // Option B: Local Mac IP (RECOMMENDED for physical iPhone & Watch testing on the same Wi-Fi network)
+    // Replace "192.168.1.XX" with your Mac's actual local Wi-Fi IP address (found in Mac System Settings > Wi-Fi > Details)
+    let serverURL = "http://192.168.1.100:3000"
+    
+    // Option C: iOS Simulator Localhost (For testing inside Xcode's iOS Simulator)
+    // let serverURL = "http://localhost:3000"
+    // ---------------------------------
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Header
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text("RECOVERY COACH")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.gray)
+                            Text("Fitness Intelligence")
+                                .font(.largeTitle)
+                                .fontWeight(.black)
+                        }
+                        Spacer()
+                        Image(systemName: "bolt.heart.fill")
+                            .font(.system(size: 35))
+                            .foregroundColor(.green)
+                    }
+                    .padding(.top)
+
+                // Phase 1: On-device Longevity + Recovery entry points
+                HStack(spacing: 12) {
+                    NavigationLink {
+                        LongevityView(hkManager: hkManager)
+                    } label: {
+                        insightTile(title: "Longevity",
+                                    subtitle: "Drift Score",
+                                    value: hkManager.longevityReport.map { "\(Int($0.overallScore.rounded()))" } ?? "--",
+                                    systemImage: "infinity",
+                                    tint: .teal)
+                    }
+                    .buttonStyle(.plain)
+
+                    NavigationLink {
+                        RecoveryView(hkManager: hkManager)
+                    } label: {
+                        insightTile(title: "Recovery",
+                                    subtitle: hkManager.recoveryReport?.zone.rawValue ?? "Readiness",
+                                    value: hkManager.recoveryReport.map { "\($0.score)" } ?? "--",
+                                    systemImage: "bolt.heart.fill",
+                                    tint: .green)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                // Phase 2: Fitness Score + recovery-informed Live Coaching entry points
+                HStack(spacing: 12) {
+                    NavigationLink {
+                        FitnessView(hkManager: hkManager)
+                    } label: {
+                        insightTile(title: "Fitness",
+                                    subtitle: "14-Day Score",
+                                    value: hkManager.fitnessReport.map { "\(Int($0.score.rounded()))" } ?? "--",
+                                    systemImage: "figure.run",
+                                    tint: .orange)
+                    }
+                    .buttonStyle(.plain)
+
+                    NavigationLink {
+                        LiveWorkoutCoachView(hkManager: hkManager)
+                    } label: {
+                        insightTile(title: "Live Coach",
+                                    subtitle: hkManager.recoveryReport.map { "\($0.zone.rawValue) day" } ?? "Recovery-informed",
+                                    value: "▶",
+                                    systemImage: "figure.run.circle.fill",
+                                    tint: .blue)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                // Phase 3: Hidden Signals + Pattern Detectors entry points
+                HStack(spacing: 12) {
+                    NavigationLink {
+                        HiddenSignalsView(hkManager: hkManager)
+                    } label: {
+                        insightTile(title: "Hidden Signals",
+                                    subtitle: "Watch metrics",
+                                    value: "\(hkManager.hiddenSignals.count)",
+                                    systemImage: "waveform.path.ecg",
+                                    tint: .indigo)
+                    }
+                    .buttonStyle(.plain)
+
+                    NavigationLink {
+                        PatternSignalsView(hkManager: hkManager)
+                    } label: {
+                        insightTile(title: "Patterns",
+                                    subtitle: patternsSubtitle,
+                                    value: "\(hkManager.patternSignals.count)",
+                                    systemImage: "chart.xyaxis.line",
+                                    tint: .pink)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                // Phase 4: Evidence library + private wellness Journal entry points
+                HStack(spacing: 12) {
+                    NavigationLink {
+                        EvidenceView()
+                    } label: {
+                        insightTile(title: "Evidence",
+                                    subtitle: "Why this matters",
+                                    value: "\(EvidenceLibrary.all.count)",
+                                    systemImage: "books.vertical.fill",
+                                    tint: .teal)
+                    }
+                    .buttonStyle(.plain)
+
+                    NavigationLink {
+                        JournalView(hkManager: hkManager)
+                    } label: {
+                        insightTile(title: "Journal",
+                                    subtitle: "Your private notes",
+                                    value: "\(journal.entries.count)",
+                                    systemImage: "book.closed.fill",
+                                    tint: .purple)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                // HealthKit Sync Status
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Apple Watch HealthKit Integration")
+                        .font(.headline)
+                    
+                    if !hkManager.isAuthorized {
+                        Button(action: { hkManager.requestAuthorization() }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "applewatch")
+                                Text("Authorize Apple Watch Sync")
+                            }
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.green)
+                            .cornerRadius(12)
+                        }
+                    } else {
+                        VStack(spacing: 12) {
+                            Group {
+                                HStack {
+                                    Text("Heart Rate Variability")
+                                    Spacer()
+                                    Text("\(Int(hkManager.currentHRV)) ms")
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.green)
+                                }
+                                Divider()
+                                HStack {
+                                    Text("Resting Heart Rate")
+                                    Spacer()
+                                    Text("\(Int(hkManager.restingHR)) bpm")
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.blue)
+                                }
+                                Divider()
+                                HStack {
+                                    Text("Sleep Last Night")
+                                    Spacer()
+                                    Text("\(String(format: "%.1f", hkManager.sleepHoursLastNight)) hrs")
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.purple)
+                                }
+                            }
+                            
+                            Divider()
+                            
+                            Group {
+                                HStack {
+                                    Text("Oxygen Saturation (SvO2/SpO2)")
+                                    Spacer()
+                                    Text("\(Int(hkManager.svO2))%")
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.cyan)
+                                }
+                                Divider()
+                                HStack {
+                                    Text("VO2 Max Capacity")
+                                    Spacer()
+                                    Text("\(String(format: "%.1f", hkManager.vo2Max)) ml/kg/min")
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.orange)
+                                }
+                                Divider()
+                                HStack {
+                                    Text("Heart Rate Recovery")
+                                    Spacer()
+                                    Text("\(Int(hkManager.heartRateRecovery)) bpm drop")
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.pink)
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(Color(uiColor: .secondarySystemBackground))
+                        .cornerRadius(12)
+                    }
+                }
+                .padding()
+                .background(Color(uiColor: .systemBackground))
+                .cornerRadius(16)
+                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+                
+                // Trigger Analytics Engine
+                if hkManager.isAuthorized {
+                    Button(action: { syncWithAnalyticsEngine() }) {
+                        HStack(spacing: 8) {
+                            if isLoading {
+                                ProgressView()
+                                    .tint(.black)
+                            } else {
+                                Group {
+                                    Image(systemName: "sparkles")
+                                    Text("Compute AI Insights")
+                                }
+                            }
+                        }
+                        .font(.headline)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.yellow)
+                        .cornerRadius(12)
+                    }
+                    .disabled(isLoading)
+                }
+                
+                // Analytics Dashboard outputs
+                if recoveryScore > 0 {
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Text("Recovery Score")
+                                .font(.headline)
+                            Spacer()
+                            Text("\(recoveryScore)%")
+                                .font(.title)
+                                .fontWeight(.black)
+                                .foregroundColor(recoveryScore > 75 ? .green : .orange)
+                        }
+                        
+                        Text("Suggested Zone: \(targetZone)")
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.blue)
+                        
+                        Text(coachingResponse)
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Adaptive Workout Adjustment")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(.gray)
+                            Text(planAdjust)
+                                .font(.subheadline)
+                                .italic()
+                        }
+                        .padding()
+                        .background(Color.yellow.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                    .padding()
+                    .background(Color(uiColor: .systemBackground))
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+                } else {
+                    VStack(alignment: .center, spacing: 12) {
+                        Image(systemName: "sparkles")
+                            .font(.title)
+                            .foregroundColor(.yellow)
+                        Text(coachingResponse)
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color(uiColor: .systemBackground))
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+                }
+            }
+            .padding()
+        }
+        // Let ONLY the background bleed under the status bar / home indicator.
+        // Content stays inside NavigationStack + ScrollView, which respect the
+        // top safe area, so the header never collides with the status-bar clock.
+        .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
+    }
+}
+    
+    // Phase 3: tile subtitle reflecting the highest-severity pattern currently found.
+    private var patternsSubtitle: String {
+        if hkManager.patternSignals.contains(where: { $0.severity == .alert }) { return "Review flagged" }
+        if hkManager.patternSignals.contains(where: { $0.severity == .insight }) { return "Insights found" }
+        if hkManager.patternSignals.isEmpty { return "All steady" }
+        return "Informational"
+    }
+
+    // Phase 1: compact tappable tile for the Longevity/Recovery entry points.
+    private func insightTile(title: String, subtitle: String, value: String, systemImage: String, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: systemImage)
+                    .foregroundColor(tint)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Text(value)
+                .font(.system(size: 32, weight: .black, design: .rounded))
+                .foregroundColor(.primary)
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.bold)
+            Text(subtitle)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(uiColor: .systemBackground))
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+    }
+
+    // Communicate with React application API
+    func syncWithAnalyticsEngine() {
+        isLoading = true
+        guard let url = URL(string: "\(serverURL)/api/coaching/daily") else {
+            isLoading = false
+            self.computeOnDeviceFallback(reason: "Invalid server URL")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let payload: [String: Any] = [
+            "hrv": hkManager.currentHRV > 0 ? hkManager.currentHRV : 72.0,
+            "rhr": hkManager.restingHR > 0 ? hkManager.restingHR : 53.0,
+            "sleepDuration": hkManager.sleepHoursLastNight > 0 ? hkManager.sleepHoursLastNight : 7.9,
+            "sleepEfficiency": 92.0,
+            "stressLevel": 35,
+            "acuteTrainingLoad": 310,
+            "chronicTrainingLoad": 280,
+            "fatigueIndex": 40,
+            "svO2": hkManager.svO2 > 0 ? hkManager.svO2 : 74,
+            "vo2Max": hkManager.vo2Max > 0 ? hkManager.vo2Max : 51.5,
+            "heartRateRecovery": hkManager.heartRateRecovery > 0 ? hkManager.heartRateRecovery : 42
+        ]
+        
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                self.isLoading = false
+                
+                if let error = error {
+                    print("[Aptus] Network error calling AI Insights: \(error.localizedDescription)")
+                    self.computeOnDeviceFallback(reason: "Offline / Network issue: \(error.localizedDescription)")
+                    return
+                }
+                
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    print("[Aptus] Invalid response received from server")
+                    self.computeOnDeviceFallback(reason: "Invalid server response format")
+                    return
+                }
+                
+                print("[Aptus] Server returned status code: \(httpResponse.statusCode)")
+                if httpResponse.statusCode != 200 {
+                    print("[Aptus] Non-200 response from server: \(httpResponse.statusCode)")
+                    self.computeOnDeviceFallback(reason: "Server returned code \(httpResponse.statusCode)")
+                    return
+                }
+                
+                guard let data = data else {
+                    print("[Aptus] No data returned from server")
+                    self.computeOnDeviceFallback(reason: "Empty server payload")
+                    return
+                }
+                
+                do {
+                    guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                        print("[Aptus] Could not parse response as JSON dictionary")
+                        self.computeOnDeviceFallback(reason: "Response was not structured JSON (e.g. redirected webpage)")
+                        return
+                    }
+                    
+                    print("[Aptus] Received JSON response: \(json)")
+                    
+                    guard let recovery = json["recoveryStatus"] as? [String: Any],
+                          let intensity = json["recommendedIntensity"] as? [String: Any],
+                          let adjustment = json["planAdjustment"] as? [String: Any] else {
+                        print("[Aptus] JSON response missing expected keys")
+                        self.computeOnDeviceFallback(reason: "Missing expected response fields")
+                        return
+                    }
+                    
+                    self.recoveryScore = recovery["score"] as? Int ?? 0
+                    self.coachingResponse = recovery["description"] as? String ?? ""
+                    self.targetZone = intensity["targetHeartRateZone"] as? String ?? ""
+                    self.planAdjust = adjustment["adjustedPlan"] as? String ?? ""
+                } catch {
+                    print("[Aptus] JSON Parsing error: \(error.localizedDescription)")
+                    self.computeOnDeviceFallback(reason: "JSON Format Error: \(error.localizedDescription)")
+                }
+            }
+        }.resume()
+    }
+    
+    // High-fidelity Sports-Science Engine implemented locally as a fallback
+    func computeOnDeviceFallback(reason: String) {
+        print("[Aptus] Running on-device Athletic Analytics Fallback. Reason: \(reason)")
+        
+        let hrvVal = hkManager.currentHRV > 0 ? hkManager.currentHRV : 72.0
+        let rhrVal = hkManager.restingHR > 0 ? hkManager.restingHR : 53.0
+        let sleepVal = hkManager.sleepHoursLastNight > 0 ? hkManager.sleepHoursLastNight : 7.9
+        let svO2Val = hkManager.svO2 > 0 ? hkManager.svO2 : 74
+        let vo2MaxVal = hkManager.vo2Max > 0 ? hkManager.vo2Max : 51.5
+        let hrrVal = hkManager.heartRateRecovery > 0 ? hkManager.heartRateRecovery : 42
+        let stressVal = 35.0
+        let fatigueVal = 40.0
+        
+        // 1. Calculate recovery score
+        var score = 50.0
+        score += (hrvVal - 55.0) * 0.8
+        let sleepDiff = sleepVal - 8.0
+        score -= abs(sleepDiff) * 8.0
+        score += (55.0 - rhrVal) * 1.5
+        score -= (stressVal - 30.0) * 0.4
+        if hrrVal > 30 {
+            score += Double(hrrVal - 30) * 0.5
+        } else if hrrVal < 20 {
+            score -= Double(20 - hrrVal) * 1.0
+        }
+        if svO2Val < 63 {
+            score -= Double(63 - svO2Val) * 1.5
+        }
+        let finalScore = max(10, min(100, Int(round(score))))
+        
+        // 2. Status
+        var statusStr = "Recovering"
+        if finalScore >= 80 {
+            statusStr = "Optimal"
+        } else if finalScore >= 55 {
+            statusStr = "Recovering"
+        } else if stressVal > 70.0 || rhrVal > 60.0 {
+            statusStr = "Strained"
+        } else {
+            statusStr = "Deconditioned"
+        }
+        
+        // 3. Recommended Intensity & Zone
+        var intensityStr = "Aerobic/Base"
+        var targetHRZone = "Zone 2 & 3: 120 - 155 bpm"
+        var coachDesc = ""
+        
+        if statusStr == "Optimal" {
+            intensityStr = "Tempo/Threshold"
+            targetHRZone = "Zone 4: 156 - 175 bpm"
+            coachDesc = "Your autonomic nervous system is fully primed. Elevated HRV (\(Int(hrvVal))ms), low RHR (\(Int(rhrVal))bpm), and high VO2 Max of \(String(format: "%.1f", vo2MaxVal)) signify high cardiorespiratory readiness. Excellent day for a threshold session."
+        } else if statusStr == "Recovering" {
+            intensityStr = "Aerobic/Base"
+            targetHRZone = "Zone 2 & 3: 120 - 155 bpm"
+            coachDesc = "Nervous system is in stable equilibrium. With oxygen saturation (SvO2) at \(Int(svO2Val))% and HR recovery of \(Int(hrrVal)) bpm, maintain solid aerobic baseline. Keep effort conversational."
+        } else {
+            intensityStr = "Active Recovery"
+            targetHRZone = "Zone 1: Under 120 bpm"
+            coachDesc = "Nervous strain or fatigue detected. Heart Rate Recovery has slowed to \(Int(hrrVal)) bpm. Lower your intensity, focus on active mobility, hydration, and restoring oxygen delivery today."
+        }
+        
+        let adjustedPlanStr = statusStr == "Optimal" ? "10km Tempo Run + 3x 1min fast strides" : (statusStr == "Strained" ? "30min Easy Zone 1 Recovery Jog or Active Rest" : "8km Steady Base Aerobic Run")
+        
+        // Update states on-screen
+        self.recoveryScore = finalScore
+        self.coachingResponse = "On-Device Engine: \(coachDesc)"
+        self.targetZone = targetHRZone
+        self.planAdjust = "Adjusted plan: \(adjustedPlanStr) (On-Device Fallback)"
+    }
+}

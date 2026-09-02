@@ -1,0 +1,630 @@
+//
+//  PatternDetectorEngine.swift
+//  Aptus
+//
+//  On-device pattern / anomaly detector (pure Swift, no UIKit / HealthKit / SwiftUI).
+//  Scans recent metric history assembled by HealthKitManager and surfaces trend and
+//  anomaly patterns as `PatternSignal`s. Every detector is defensive: if its input
+//  series is missing or too short it returns `nil` (skipped) rather than crashing.
+//
+//  It does NOT re-query HealthKit and does NOT recompute the Phase 1/2 engines — the
+//  caller passes already-computed series + report-derived scalars (e.g. Banister form
+//  from FitnessEngine) in `PatternInputs`.
+//
+//  COMPLIANCE (App Store Guideline 1.4): every signal is an informational wellness
+//  estimate, NOT a diagnosis, risk prediction, or medical device. Evidence URLs are
+//  attached ONLY where a threshold is genuinely evidence-backed (reused from
+//  LongevityEngine); trend heuristics without a clinical threshold carry no citation.
+//
+
+import Foundation
+
+// MARK: - Public model
+
+public enum SignalSeverity: Int {
+    case info = 0        // neutral / mild observation
+    case insight = 1     // meaningful trend worth noticing
+    case alert = 2       // strong divergence — review recommended
+
+    /// Higher sorts first.
+    public var sortRank: Int { rawValue }
+
+    public var label: String {
+        switch self {
+        case .info: return "Info"
+        case .insight: return "Insight"
+        case .alert: return "Attention"
+        }
+    }
+
+    /// UI color hint (kept string-based so this file stays SwiftUI-free).
+    public var colorHint: String {
+        switch self {
+        case .info: return "gray"
+        case .insight: return "blue"
+        case .alert: return "orange"
+        }
+    }
+}
+
+public enum SignalDirection: String {
+    case up = "Up"
+    case down = "Down"
+    case flat = "Flat"
+    case spike = "Spike"
+    case streak = "Streak"
+
+    public var symbolName: String {
+        switch self {
+        case .up: return "arrow.up.right"
+        case .down: return "arrow.down.right"
+        case .flat: return "arrow.right"
+        case .spike: return "bolt.fill"
+        case .streak: return "repeat"
+        }
+    }
+}
+
+public struct PatternSignal: Identifiable {
+    public let id: String
+    public let title: String
+    public let severity: SignalSeverity
+    public let direction: SignalDirection
+    public let summary: String
+    public let detail: String
+    public let supportingValues: [Double]
+    public let evidenceURL: URL?
+
+    public init(id: String, title: String, severity: SignalSeverity, direction: SignalDirection,
+                summary: String, detail: String, supportingValues: [Double], evidenceURL: URL?) {
+        self.id = id
+        self.title = title
+        self.severity = severity
+        self.direction = direction
+        self.summary = summary
+        self.detail = detail
+        self.supportingValues = supportingValues
+        self.evidenceURL = evidenceURL
+    }
+}
+
+// MARK: - Hidden-signal model (for HiddenSignalsView)
+
+/// A "hidden" Apple Watch / HealthKit metric surfaced with context. `trend` is a
+/// coarse direction derived from a short recent series; `meaning` is plain-language.
+public struct HiddenSignal: Identifiable {
+    public enum Category: String, CaseIterable {
+        case cardiovascular = "Cardiovascular"
+        case sleep = "Sleep"
+        case respiratory = "Respiratory"
+        case mobility = "Mobility"
+        case environmental = "Environmental"
+    }
+
+    public enum Trend: String {
+        case up = "Up"
+        case down = "Down"
+        case flat = "Flat"
+        case none = "—"
+
+        public var symbolName: String {
+            switch self {
+            case .up: return "arrow.up.right"
+            case .down: return "arrow.down.right"
+            case .flat: return "arrow.right"
+            case .none: return "minus"
+            }
+        }
+    }
+
+    public let id: String
+    public let category: Category
+    public let name: String
+    public let value: Double
+    public let unit: String
+    public let trend: Trend
+    public let meaning: String
+    public let evidenceURL: URL?
+
+    public init(id: String, category: Category, name: String, value: Double, unit: String,
+                trend: Trend, meaning: String, evidenceURL: URL? = nil) {
+        self.id = id
+        self.category = category
+        self.name = name
+        self.value = value
+        self.unit = unit
+        self.trend = trend
+        self.meaning = meaning
+        self.evidenceURL = evidenceURL
+    }
+}
+
+// MARK: - Engine inputs
+
+/// All series are ordered oldest → newest. Any may be empty; detectors that need a
+/// series simply skip when it is too short. Scalars are optional and skipped when nil.
+public struct PatternInputs {
+    // Cardiovascular / autonomic
+    public var hrvDaily: [Double] = []        // ms, up to 28d
+    public var rhrDaily: [Double] = []        // bpm, up to 21d
+    public var hrrValues: [Double] = []       // bpm 1-min recovery drops, recent
+    public var walkingHRDaily: [Double] = []  // bpm
+
+    // Sleep
+    public var sleepDaily: [Double] = []          // hours, up to 14d
+    public var deepRemShare: Double? = nil        // fraction of last night in deep+REM
+    public var sleepOnsetMinutes: [Double] = []   // minutes-after-20:00 onset, recent nights
+
+    // Training
+    public var dailyLoad: [Double] = []       // TRIMP-style daily load, up to 14d
+    public var form: Double? = nil            // Banister TSB (fitness − fatigue) from FitnessEngine
+
+    // Fitness
+    public var vo2maxDaily: [Double] = []     // ml/kg/min, up to 90d
+
+    // Activity
+    public var stepsDaily: [Double] = []      // steps/day, up to 28d
+
+    // Cardiac rhythm
+    public var afibBurdenDaily: [Double] = []      // %, AFib burden readings over time
+
+    // Respiratory / oxygen / temperature
+    public var spo2Overnight: [Double] = []       // %, daily overnight avg/min
+    public var respiratoryDaily: [Double] = []    // breaths/min, daily
+    public var wristTempDaily: [Double] = []       // °C nightly (absolute or baseline-relative)
+
+    // Mobility
+    public var walkingSteadiness: [Double] = []   // %, recent
+    public var sixMinWalk: [Double] = []          // meters, recent tests
+
+    // Environmental
+    public var daylightMinutesDaily: [Double] = []// minutes in daylight, daily
+    public var uvDaily: [Double] = []             // UV exposure index, daily
+
+    public init() {}
+}
+
+// MARK: - Engine
+
+public struct PatternDetectorEngine {
+
+    public init() {}
+
+    // Evidence URLs reused from LongevityEngine (only attached where evidence-backed).
+    private static let urlHRV = URL(string: "https://linkinghub.elsevier.com/retrieve/pii/S0149763422003967")
+    private static let urlRHR = URL(string: "https://linkinghub.elsevier.com/retrieve/pii/S0939475317300856")
+    private static let urlVO2 = URL(string: "https://pmc.ncbi.nlm.nih.gov/articles/PMC11103301/")
+    private static let urlSleep = URL(string: "https://link.springer.com/10.1007/s11357-025-01592-y")
+    private static let urlGait = URL(string: "https://pmc.ncbi.nlm.nih.gov/articles/PMC3080184/")
+    private static let urlSteps = URL(string: "https://pmc.ncbi.nlm.nih.gov/articles/PMC2951585/")
+
+    /// Runs every detector and returns the non-nil signals sorted by severity
+    /// (alert → insight → info), then by title for stability.
+    public func detect(from i: PatternInputs) -> [PatternSignal] {
+        let detectors: [(PatternInputs) -> PatternSignal?] = [
+            hrvTrendingDown, rhrElevated, sleepDebt, lowDeepRem, trainingMonotony,
+            strainSpike, vo2Declining, recoveryTrendDown, bluntedHRR, stepsDeclining,
+            inactivityStreak, weekendWarrior, afibBurdenIncrease, lowOvernightSpO2,
+            elevatedRespiratory, wristTempElevation, walkingSteadinessDecline,
+            sixMinWalkDecline, lowDaylight, rhrHrvDivergence, sleepIrregularity,
+            overtraining
+        ]
+        let signals = detectors.compactMap { $0(i) }
+        return signals.sorted {
+            if $0.severity.sortRank != $1.severity.sortRank {
+                return $0.severity.sortRank > $1.severity.sortRank
+            }
+            return $0.title < $1.title
+        }
+    }
+
+    // MARK: - Detectors (each returns nil when data is insufficient)
+
+    // 1. HRV trending down: 7-day avg meaningfully below 28-day avg.
+    private func hrvTrendingDown(_ i: PatternInputs) -> PatternSignal? {
+        guard i.hrvDaily.count >= 14 else { return nil }
+        let last7 = mean(Array(i.hrvDaily.suffix(7)))
+        let base = mean(i.hrvDaily)
+        guard base > 0, last7 > 0 else { return nil }
+        let dropPct = (base - last7) / base * 100
+        guard dropPct >= 8 else { return nil }
+        let sev: SignalSeverity = dropPct >= 20 ? .alert : .insight
+        return PatternSignal(
+            id: "hrv_down", title: "HRV Trending Down",
+            severity: sev, direction: .down,
+            summary: "Your 7-day HRV is \(pct(dropPct)) below your 28-day average.",
+            detail: "A sustained dip in heart-rate variability can reflect accumulated fatigue, stress, or incomplete recovery. Consider easier days and more sleep. Informational estimate only.",
+            supportingValues: [round1(last7), round1(base)],
+            evidenceURL: Self.urlHRV)
+    }
+
+    // 2. RHR elevated above 21-day baseline.
+    private func rhrElevated(_ i: PatternInputs) -> PatternSignal? {
+        guard i.rhrDaily.count >= 10 else { return nil }
+        let last3 = mean(Array(i.rhrDaily.suffix(3)))
+        let base = mean(i.rhrDaily)
+        guard base > 0 else { return nil }
+        let deltaBpm = last3 - base
+        guard deltaBpm >= 4 else { return nil }
+        let sev: SignalSeverity = deltaBpm >= 8 ? .alert : .insight
+        return PatternSignal(
+            id: "rhr_elevated", title: "Resting Heart Rate Elevated",
+            severity: sev, direction: .up,
+            summary: "Recent resting HR is \(round1(deltaBpm)) bpm above your 21-day baseline.",
+            detail: "A short-term rise in resting heart rate often accompanies stress, illness onset, alcohol, or under-recovery. If it persists with other symptoms, consider rest. Informational estimate only.",
+            supportingValues: [round1(last3), round1(base)],
+            evidenceURL: Self.urlRHR)
+    }
+
+    // 3. Sleep debt: 7-day average under 6h.
+    private func sleepDebt(_ i: PatternInputs) -> PatternSignal? {
+        guard i.sleepDaily.count >= 5 else { return nil }
+        let avg = mean(Array(i.sleepDaily.suffix(7)))
+        guard avg > 0, avg < 6.0 else { return nil }
+        let sev: SignalSeverity = avg < 5.0 ? .alert : .insight
+        return PatternSignal(
+            id: "sleep_debt", title: "Sleep Debt Accumulating",
+            severity: sev, direction: .down,
+            summary: "You've averaged \(round1(avg))h of sleep over the last week.",
+            detail: "Consistently sleeping under ~6h is associated with reduced recovery and higher long-term health risk. Aim for a 7–8h window. Informational estimate only.",
+            supportingValues: [round1(avg)],
+            evidenceURL: Self.urlSleep)
+    }
+
+    // 4. Low deep/REM sleep share of last night.
+    private func lowDeepRem(_ i: PatternInputs) -> PatternSignal? {
+        guard let share = i.deepRemShare, share > 0 else { return nil }
+        guard share < 0.30 else { return nil }
+        return PatternSignal(
+            id: "low_deep_rem", title: "Low Deep/REM Sleep",
+            severity: .insight, direction: .down,
+            summary: "Only \(pct(share * 100)) of last night was deep or REM sleep.",
+            detail: "Deep and REM stages support physical and cognitive recovery. Low proportions can follow late meals, alcohol, or stress. Informational estimate only.",
+            supportingValues: [round1(share * 100)],
+            evidenceURL: nil)
+    }
+
+    // 5. Training monotony: low coefficient of variation of daily load over 14d.
+    private func trainingMonotony(_ i: PatternInputs) -> PatternSignal? {
+        let load = Array(i.dailyLoad.suffix(14))
+        guard load.count >= 7 else { return nil }
+        let m = mean(load)
+        guard m > 5 else { return nil } // needs meaningful load to be "monotonous"
+        let cv = stdDev(load) / m
+        guard cv < 0.35 else { return nil }
+        return PatternSignal(
+            id: "monotony", title: "Training Monotony",
+            severity: .insight, direction: .flat,
+            summary: "Your daily training load has been unusually uniform (low variation).",
+            detail: "Highly monotonous training (little hard/easy contrast) is linked to staleness and overreaching. Introduce clearer easy and hard days. Informational estimate only.",
+            supportingValues: [round1(cv), round1(m)],
+            evidenceURL: nil)
+    }
+
+    // 6. Strain spike: yesterday's load far above the 14-day average.
+    private func strainSpike(_ i: PatternInputs) -> PatternSignal? {
+        guard i.dailyLoad.count >= 5, let yesterday = i.dailyLoad.last else { return nil }
+        let prior = Array(i.dailyLoad.dropLast())
+        let base = mean(prior)
+        guard base > 5, yesterday > 0 else { return nil }
+        let ratio = yesterday / base
+        guard ratio >= 1.8 else { return nil }
+        let sev: SignalSeverity = ratio >= 2.5 ? .alert : .insight
+        return PatternSignal(
+            id: "strain_spike", title: "Training Strain Spike",
+            severity: sev, direction: .spike,
+            summary: "Your latest session load was \(round1(ratio))× your recent average.",
+            detail: "A sudden spike in training load raises short-term injury and overreaching risk. Follow a hard day with adequate recovery. Informational estimate only.",
+            supportingValues: [round1(yesterday), round1(base)],
+            evidenceURL: nil)
+    }
+
+    // 7. VO2max declining trend over the available window (up to 90d).
+    private func vo2Declining(_ i: PatternInputs) -> PatternSignal? {
+        guard i.vo2maxDaily.count >= 6 else { return nil }
+        let s = slopePerStep(i.vo2maxDaily)
+        // Convert per-sample slope to an approximate total change over the window.
+        let totalChange = s * Double(i.vo2maxDaily.count - 1)
+        guard totalChange <= -0.8 else { return nil }
+        return PatternSignal(
+            id: "vo2_down", title: "VO₂ Max Declining",
+            severity: .insight, direction: .down,
+            summary: "Your VO₂ max estimate has drifted down ~\(round1(abs(totalChange))) ml/kg/min recently.",
+            detail: "Cardiorespiratory fitness is one of the strongest longevity signals. A downward drift may reflect reduced aerobic training. Informational estimate only.",
+            supportingValues: [round1(i.vo2maxDaily.first ?? 0), round1(i.vo2maxDaily.last ?? 0)],
+            evidenceURL: Self.urlVO2)
+    }
+
+    // 8. Recovery trend down: composite proxy (HRV↑ / RHR↓ / sleep) last7 vs prior7.
+    private func recoveryTrendDown(_ i: PatternInputs) -> PatternSignal? {
+        guard i.hrvDaily.count >= 14, i.rhrDaily.count >= 14 else { return nil }
+        func proxy(_ hrv: [Double], _ rhr: [Double], _ sleep: [Double]) -> Double {
+            let h = mean(hrv), r = mean(rhr), s = sleep.isEmpty ? 7.5 : mean(sleep)
+            // Higher HRV good, lower RHR good, sleep near 7.5 good.
+            return h - r + (10 - abs(s - 7.5) * 4)
+        }
+        let hrv = i.hrvDaily, rhr = i.rhrDaily
+        let sleep = i.sleepDaily
+        let last7 = proxy(Array(hrv.suffix(7)), Array(rhr.suffix(7)), Array(sleep.suffix(7)))
+        let prior7 = proxy(Array(hrv.suffix(14).prefix(7)), Array(rhr.suffix(14).prefix(7)), Array(sleep.suffix(14).prefix(7)))
+        guard prior7 != 0 else { return nil }
+        let drop = prior7 - last7
+        guard drop >= 6 else { return nil }
+        return PatternSignal(
+            id: "recovery_down", title: "Recovery Trending Down",
+            severity: .insight, direction: .down,
+            summary: "Your recovery signals are weaker this week than last.",
+            detail: "A composite of HRV, resting heart rate, and sleep suggests reduced readiness versus the prior week. Consider a lighter training block. Informational estimate only.",
+            supportingValues: [round1(last7), round1(prior7)],
+            evidenceURL: nil)
+    }
+
+    // 9. Blunted heart-rate recovery (low 1-min HRR drops).
+    private func bluntedHRR(_ i: PatternInputs) -> PatternSignal? {
+        guard i.hrrValues.count >= 3 else { return nil }
+        let avg = mean(Array(i.hrrValues.suffix(5)))
+        guard avg > 0, avg < 18 else { return nil }
+        let sev: SignalSeverity = avg < 12 ? .alert : .insight
+        return PatternSignal(
+            id: "blunted_hrr", title: "Blunted Heart-Rate Recovery",
+            severity: sev, direction: .down,
+            summary: "Your 1-minute heart-rate recovery is averaging \(round1(avg)) bpm.",
+            detail: "A smaller post-exercise heart-rate drop can reflect fatigue or reduced autonomic reactivation; classic references flag ≤12 bpm. Informational estimate only.",
+            supportingValues: [round1(avg)],
+            evidenceURL: Self.urlVO2)
+    }
+
+    // 10. Steps declining: 7-day avg vs 28-day avg.
+    private func stepsDeclining(_ i: PatternInputs) -> PatternSignal? {
+        guard i.stepsDaily.count >= 14 else { return nil }
+        let last7 = mean(Array(i.stepsDaily.suffix(7)))
+        let base = mean(i.stepsDaily)
+        guard base > 0, last7 > 0 else { return nil }
+        let dropPct = (base - last7) / base * 100
+        guard dropPct >= 20 else { return nil }
+        return PatternSignal(
+            id: "steps_down", title: "Daily Steps Declining",
+            severity: .info, direction: .down,
+            summary: "Your steps are down \(pct(dropPct)) versus your 4-week average.",
+            detail: "Higher daily step counts track with lower long-term mortality. A short dip is normal; a sustained drop is worth a nudge back toward movement. Informational estimate only.",
+            supportingValues: [round1(last7), round1(base)],
+            evidenceURL: Self.urlSteps)
+    }
+
+    // 11. Inactivity streak: consecutive most-recent low-step days.
+    private func inactivityStreak(_ i: PatternInputs) -> PatternSignal? {
+        guard i.stepsDaily.count >= 3 else { return nil }
+        let threshold = 3000.0
+        var streak = 0
+        for v in i.stepsDaily.reversed() {
+            if v < threshold { streak += 1 } else { break }
+        }
+        guard streak >= 3 else { return nil }
+        let sev: SignalSeverity = streak >= 5 ? .insight : .info
+        return PatternSignal(
+            id: "inactivity_streak", title: "Inactivity Streak",
+            severity: sev, direction: .streak,
+            summary: "\(streak) consecutive days under 3,000 steps.",
+            detail: "Extended low-movement stretches reduce cardiovascular and metabolic stimulus. A short daily walk breaks the streak. Informational estimate only.",
+            supportingValues: [Double(streak)],
+            evidenceURL: Self.urlSteps)
+    }
+
+    // 12. Weekend-warrior pattern: weekend load much higher than weekday load.
+    //     Expects dailyLoad aligned so the last element is "yesterday"; we use the
+    //     provided weekend/weekday split via index parity as a rough proxy.
+    private func weekendWarrior(_ i: PatternInputs) -> PatternSignal? {
+        let load = Array(i.dailyLoad.suffix(14))
+        guard load.count >= 10 else { return nil }
+        // Rough proxy: split into the highest 2/7 days vs the rest.
+        let sorted = load.sorted(by: >)
+        let topTwo = mean(Array(sorted.prefix(2)))
+        let rest = mean(Array(sorted.dropFirst(2)))
+        guard rest > 3, topTwo > 0 else { return nil }
+        let ratio = topTwo / max(1, rest)
+        guard ratio >= 3.0 else { return nil }
+        return PatternSignal(
+            id: "weekend_warrior", title: "Concentrated-Load Pattern",
+            severity: .info, direction: .spike,
+            summary: "Most of your training load is packed into a couple of big days.",
+            detail: "Cramming volume into 1–2 sessions raises relative injury risk versus spreading it out. Consider distributing easy volume across more days. Informational estimate only.",
+            supportingValues: [round1(topTwo), round1(rest)],
+            evidenceURL: nil)
+    }
+
+    // 13. AFib burden increase (only when the type is available and populated).
+    private func afibBurdenIncrease(_ i: PatternInputs) -> PatternSignal? {
+        guard i.afibBurdenDaily.count >= 2 else { return nil }
+        let recent = i.afibBurdenDaily.last ?? 0
+        let base = mean(Array(i.afibBurdenDaily.dropLast()))
+        guard recent > 0 else { return nil }
+        // Flag when the latest burden is materially above the prior readings.
+        guard recent >= base + 2 || recent >= 3 else { return nil }
+        let sev: SignalSeverity = recent >= 5 ? .alert : .insight
+        return PatternSignal(
+            id: "afib_burden", title: "AFib Burden Increased",
+            severity: sev, direction: .up,
+            summary: "Your recorded AFib burden rose to \(pct(recent)).",
+            detail: "Atrial-fibrillation burden is the share of time Apple Watch estimated an irregular rhythm. An increase is worth discussing with your clinician. Informational estimate only — not a diagnosis.",
+            supportingValues: [round1(recent), round1(base)],
+            evidenceURL: nil)
+    }
+
+    // 14. Low overnight SpO2 dips.
+    private func lowOvernightSpO2(_ i: PatternInputs) -> PatternSignal? {
+        guard i.spo2Overnight.count >= 3 else { return nil }
+        let recentMin = (i.spo2Overnight.suffix(5).min()) ?? 0
+        guard recentMin > 0, recentMin < 92 else { return nil }
+        let sev: SignalSeverity = recentMin < 88 ? .alert : .insight
+        return PatternSignal(
+            id: "spo2_dips", title: "Low Overnight Blood Oxygen",
+            severity: sev, direction: .down,
+            summary: "Overnight blood-oxygen readings dipped to \(round1(recentMin))%.",
+            detail: "Occasional low SpO2 readings can result from sensor fit or position. Frequent low overnight values may warrant discussion with a clinician. Informational estimate only — not a diagnosis.",
+            supportingValues: [round1(recentMin)],
+            evidenceURL: nil)
+    }
+
+    // 15. Elevated overnight respiratory rate vs its own baseline.
+    private func elevatedRespiratory(_ i: PatternInputs) -> PatternSignal? {
+        guard i.respiratoryDaily.count >= 7 else { return nil }
+        let last2 = mean(Array(i.respiratoryDaily.suffix(2)))
+        let base = mean(i.respiratoryDaily)
+        guard base > 0 else { return nil }
+        let delta = last2 - base
+        guard delta >= 2.0 else { return nil }
+        return PatternSignal(
+            id: "rr_elevated", title: "Elevated Respiratory Rate",
+            severity: .insight, direction: .up,
+            summary: "Your overnight breathing rate is \(round1(delta)) breaths/min above baseline.",
+            detail: "A rise in overnight respiratory rate can precede illness or reflect stress and poor sleep quality. Informational estimate only — not a diagnosis.",
+            supportingValues: [round1(last2), round1(base)],
+            evidenceURL: nil)
+    }
+
+    // 16. Wrist temperature elevation / illness flag.
+    private func wristTempElevation(_ i: PatternInputs) -> PatternSignal? {
+        guard i.wristTempDaily.count >= 7 else { return nil }
+        let last = i.wristTempDaily.last ?? 0
+        let base = mean(Array(i.wristTempDaily.dropLast()))
+        guard base > 0 else { return nil }
+        let delta = last - base
+        guard delta >= 0.6 else { return nil }
+        let sev: SignalSeverity = delta >= 1.0 ? .alert : .insight
+        return PatternSignal(
+            id: "wrist_temp", title: "Wrist Temperature Elevated",
+            severity: sev, direction: .up,
+            summary: "Last night's wrist temperature was \(round1(delta))°C above your recent nights.",
+            detail: "An overnight temperature rise can accompany the early stages of illness, poor sleep, alcohol, or a warm room. Informational estimate only — not a diagnosis.",
+            supportingValues: [round1(last), round1(base)],
+            evidenceURL: nil)
+    }
+
+    // 17. Walking steadiness decline.
+    private func walkingSteadinessDecline(_ i: PatternInputs) -> PatternSignal? {
+        guard i.walkingSteadiness.count >= 3 else { return nil }
+        let recent = mean(Array(i.walkingSteadiness.suffix(3)))
+        guard recent > 0, recent < 50 else { return nil } // Apple "OK" band roughly <50% = low
+        return PatternSignal(
+            id: "walk_steadiness", title: "Walking Steadiness Low",
+            severity: .insight, direction: .down,
+            summary: "Your walking steadiness is in the low range (\(pct(recent))).",
+            detail: "Lower gait steadiness is associated with higher fall risk. Strength and balance work can help. Informational estimate only.",
+            supportingValues: [round1(recent)],
+            evidenceURL: Self.urlGait)
+    }
+
+    // 18. 6-minute walk distance decline.
+    private func sixMinWalkDecline(_ i: PatternInputs) -> PatternSignal? {
+        guard i.sixMinWalk.count >= 2 else { return nil }
+        let first = i.sixMinWalk.first ?? 0
+        let last = i.sixMinWalk.last ?? 0
+        guard first > 0, last > 0 else { return nil }
+        let dropPct = (first - last) / first * 100
+        guard dropPct >= 10 else { return nil }
+        return PatternSignal(
+            id: "six_min_walk", title: "6-Minute Walk Declining",
+            severity: .insight, direction: .down,
+            summary: "Your estimated 6-minute walk distance dropped \(pct(dropPct)).",
+            detail: "Six-minute walk distance is a functional capacity marker. A decline can reflect deconditioning. Informational estimate only.",
+            supportingValues: [round1(first), round1(last)],
+            evidenceURL: Self.urlGait)
+    }
+
+    // 19. Low daylight / UV exposure.
+    private func lowDaylight(_ i: PatternInputs) -> PatternSignal? {
+        guard i.daylightMinutesDaily.count >= 5 else { return nil }
+        let avg = mean(Array(i.daylightMinutesDaily.suffix(7)))
+        guard avg >= 0, avg < 20 else { return nil }
+        return PatternSignal(
+            id: "low_daylight", title: "Low Daylight Exposure",
+            severity: .info, direction: .down,
+            summary: "You've averaged \(round1(avg)) min/day of daylight this week.",
+            detail: "Regular daylight supports circadian rhythm, mood, and sleep timing. A short morning walk outdoors helps. Informational estimate only.",
+            supportingValues: [round1(avg)],
+            evidenceURL: nil)
+    }
+
+    // 20. RHR↑ + HRV↓ divergence — composite illness / overreaching flag.
+    private func rhrHrvDivergence(_ i: PatternInputs) -> PatternSignal? {
+        guard i.hrvDaily.count >= 10, i.rhrDaily.count >= 10 else { return nil }
+        let hrvLast = mean(Array(i.hrvDaily.suffix(3)))
+        let hrvBase = mean(i.hrvDaily)
+        let rhrLast = mean(Array(i.rhrDaily.suffix(3)))
+        let rhrBase = mean(i.rhrDaily)
+        guard hrvBase > 0, rhrBase > 0 else { return nil }
+        let hrvDown = (hrvBase - hrvLast) / hrvBase >= 0.10
+        let rhrUp = (rhrLast - rhrBase) >= 3
+        guard hrvDown && rhrUp else { return nil }
+        return PatternSignal(
+            id: "rhr_hrv_divergence", title: "RHR Up + HRV Down",
+            severity: .alert, direction: .spike,
+            summary: "Resting heart rate is up while HRV is down — a classic strain signal.",
+            detail: "Simultaneously rising resting heart rate and falling HRV often accompany illness onset or significant overreaching. Prioritize rest and monitor for symptoms. Informational estimate only — not a diagnosis.",
+            supportingValues: [round1(hrvLast), round1(hrvBase), round1(rhrLast), round1(rhrBase)],
+            evidenceURL: Self.urlHRV)
+    }
+
+    // 21. Sleep timing irregularity — high variance in sleep onset.
+    private func sleepIrregularity(_ i: PatternInputs) -> PatternSignal? {
+        guard i.sleepOnsetMinutes.count >= 5 else { return nil }
+        let sd = stdDev(Array(i.sleepOnsetMinutes.suffix(7)))
+        guard sd >= 75 else { return nil } // >~75 min SD in onset time
+        return PatternSignal(
+            id: "sleep_irregular", title: "Irregular Sleep Timing",
+            severity: .insight, direction: .flat,
+            summary: "Your bedtime varied by about \(round1(sd)) minutes this week.",
+            detail: "Irregular sleep timing disrupts circadian rhythm and can degrade sleep quality even when duration is adequate. Aim for a consistent bedtime. Informational estimate only.",
+            supportingValues: [round1(sd)],
+            evidenceURL: Self.urlSleep)
+    }
+
+    // 22. Overtraining indicator — Banister form (TSB) deeply negative.
+    private func overtraining(_ i: PatternInputs) -> PatternSignal? {
+        guard let form = i.form else { return nil }
+        guard form <= -15 else { return nil }
+        let sev: SignalSeverity = form <= -25 ? .alert : .insight
+        return PatternSignal(
+            id: "overtraining", title: "Overtraining Risk",
+            severity: sev, direction: .down,
+            summary: "Your training form (freshness) is deeply negative (\(round1(form))).",
+            detail: "A strongly negative form balance means fatigue is outpacing fitness gains. A recovery block will let adaptations surface. Informational estimate only.",
+            supportingValues: [round1(form)],
+            evidenceURL: nil)
+    }
+
+    // MARK: - Math helpers
+
+    private func mean(_ xs: [Double]) -> Double {
+        let v = xs.filter { $0.isFinite }
+        guard !v.isEmpty else { return 0 }
+        return v.reduce(0, +) / Double(v.count)
+    }
+
+    private func stdDev(_ xs: [Double]) -> Double {
+        let v = xs.filter { $0.isFinite }
+        guard v.count > 1 else { return 0 }
+        let m = v.reduce(0, +) / Double(v.count)
+        let variance = v.reduce(0.0) { $0 + ($1 - m) * ($1 - m) } / Double(v.count - 1)
+        return variance.squareRoot()
+    }
+
+    /// Ordinary least-squares slope per index step (x = 0,1,2,…).
+    private func slopePerStep(_ ys: [Double]) -> Double {
+        let v = ys.filter { $0.isFinite }
+        let n = Double(v.count)
+        guard n > 1 else { return 0 }
+        let xMean = (n - 1) / 2.0
+        let yMean = v.reduce(0, +) / n
+        var num = 0.0, den = 0.0
+        for (idx, y) in v.enumerated() {
+            let dx = Double(idx) - xMean
+            num += dx * (y - yMean)
+            den += dx * dx
+        }
+        return den == 0 ? 0 : num / den
+    }
+
+    private func round1(_ x: Double) -> Double { (x * 10).rounded() / 10 }
+    private func pct(_ x: Double) -> String { "\(Int(x.rounded()))%" }
+}

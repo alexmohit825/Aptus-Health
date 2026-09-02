@@ -1,0 +1,741 @@
+//
+//  HealthKitManager.swift
+//  Aptus
+//
+//  Created by Apple Watch & HealthKit Sync Bridge
+//
+
+import Foundation
+import HealthKit
+import Combine
+
+class HealthKitManager: ObservableObject {
+    let healthStore = HKHealthStore()
+    
+    @Published var isAuthorized: Bool = false
+    @Published var currentHRV: Double = 0.0
+    @Published var restingHR: Double = 0.0
+    @Published var sleepHoursLastNight: Double = 0.0
+    @Published var svO2: Double = 0.0 // Venous / Pulse Oxygen Saturation (%)
+    @Published var vo2Max: Double = 0.0 // Aerobic Capacity (ml/kg/min)
+    @Published var heartRateRecovery: Double = 0.0 // 1-Min Post Workout Drop (bpm)
+
+    // --- Phase 1 additions: extra biomarkers for Longevity/Recovery engines ---
+    @Published var dailySteps: Double = 0.0        // steps (latest full day)
+    @Published var exerciseMinutes: Double = 0.0   // Apple exercise minutes (latest day)
+    @Published var walkingSpeed: Double = 0.0      // m/s
+    @Published var respiratoryRate: Double = 0.0   // breaths/min
+
+    // Computed on-device reports (nil until first computed).
+    @Published var longevityReport: LongevityReport?
+    @Published var recoveryReport: RecoveryReport?
+
+    // --- Phase 2 additions ---
+    // Fitness Score report (14-day Banister/Seiler) and narrative insight.
+    @Published var fitnessReport: FitnessReport?
+    @Published var narrativeInsight: NarrativeInsight?
+
+    // Injected by AptusApp so the manager can generate narratives (Apple
+    // Intelligence primary, Gemini fallback). Optional so Phase 1 flows still
+    // work if it is never set.
+    var narrativeService: NarrativeService?
+
+    // User demographics used for age/sex-adjusted longevity norms. Read from
+    // HealthKit characteristics when available; safe defaults otherwise.
+    @Published var userAge: Int = 40
+    @Published var userSex: BiologicalSexInput = .other
+
+    init() {
+        self.isAuthorized = UserDefaults.standard.bool(forKey: "hasAuthorizedHealthKit")
+        if self.isAuthorized {
+            if HKHealthStore.isHealthDataAvailable() {
+                fetchBiometrics()
+            } else {
+                loadMockData()
+            }
+        }
+    }
+    
+    func requestAuthorization() {
+        guard HKHealthStore.isHealthDataAvailable() else {
+            // HealthKit is not available (e.g. iPad, some Simulators)
+            // Enable Demo/Mock Mode so the app remains fully functional
+            DispatchQueue.main.async {
+                self.isAuthorized = true
+                UserDefaults.standard.set(true, forKey: "hasAuthorizedHealthKit")
+                self.loadMockData()
+            }
+            return
+        }
+        
+        let hrvType = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
+        let restingHRType = HKObjectType.quantityType(forIdentifier: .restingHeartRate)!
+        let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
+        let oxygenType = HKObjectType.quantityType(forIdentifier: .oxygenSaturation)!
+        let vo2MaxType = HKObjectType.quantityType(forIdentifier: .vo2Max)!
+
+        // Phase 1 additional read types (guarded — identifiers vary by OS version).
+        var extraTypes: Set<HKObjectType> = []
+        if let t = HKObjectType.quantityType(forIdentifier: .stepCount) { extraTypes.insert(t) }
+        if let t = HKObjectType.quantityType(forIdentifier: .appleExerciseTime) { extraTypes.insert(t) }
+        if let t = HKObjectType.quantityType(forIdentifier: .walkingSpeed) { extraTypes.insert(t) }
+        if let t = HKObjectType.quantityType(forIdentifier: .respiratoryRate) { extraTypes.insert(t) }
+        if let t = HKObjectType.quantityType(forIdentifier: .heartRateRecoveryOneMinute) { extraTypes.insert(t) }
+        // Phase 2: workouts + heart rate + active energy for the Fitness Score.
+        extraTypes.insert(HKObjectType.workoutType())
+        if let t = HKObjectType.quantityType(forIdentifier: .heartRate) { extraTypes.insert(t) }
+        if let t = HKObjectType.quantityType(forIdentifier: .activeEnergyBurned) { extraTypes.insert(t) }
+        if let t = HKObjectType.characteristicType(forIdentifier: .dateOfBirth) { extraTypes.insert(t) }
+        if let t = HKObjectType.characteristicType(forIdentifier: .biologicalSex) { extraTypes.insert(t) }
+
+        let typesToRead: Set<HKObjectType> = Set([hrvType, restingHRType, sleepType, oxygenType, vo2MaxType] as [HKObjectType]).union(extraTypes)
+        
+        healthStore.requestAuthorization(toShare: nil, read: typesToRead) { _, _ in
+            DispatchQueue.main.async {
+                // Set as authorized to bypass the button, fallback to mock data if queries yield nothing
+                self.isAuthorized = true
+                UserDefaults.standard.set(true, forKey: "hasAuthorizedHealthKit")
+                self.fetchBiometrics()
+            }
+        }
+    }
+    
+    func loadMockData() {
+        self.currentHRV = 65.0
+        self.restingHR = 62.0
+        self.sleepHoursLastNight = 7.4
+        self.svO2 = 98.0
+        self.vo2Max = 48.2
+        self.heartRateRecovery = 32.0
+        // Phase 1 mock values
+        self.dailySteps = 8200.0
+        self.exerciseMinutes = 34.0
+        self.walkingSpeed = 1.28
+        self.respiratoryRate = 14.5
+        self.userAge = 40
+        self.userSex = .other
+        // Compute reports from mock values (synthetic baselines).
+        computeEngineReports()
+    }
+
+    func fetchBiometrics() {
+        fetchLatestHRV()
+        fetchRestingHR()
+        fetchSleepDuration()
+        fetchLatestOxygenSaturation()
+        fetchLatestVO2Max()
+        fetchHeartRateRecovery()
+        // Phase 1 additional metrics + demographics.
+        fetchDemographics()
+        fetchDailySteps()
+        fetchExerciseMinutes()
+        fetchWalkingSpeed()
+        fetchRespiratoryRate()
+        // Recompute engine reports shortly after queries have had time to return.
+        // (HealthKit queries are async; a light delay lets @Published values settle.)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.computeEngineReports()
+        }
+    }
+    
+    private func fetchLatestHRV() {
+        guard let hrvType = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else {
+            DispatchQueue.main.async { if self.currentHRV == 0.0 { self.currentHRV = 65.0 } }
+            return
+        }
+        
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(sampleType: hrvType, predicate: nil, limit: 1, sortDescriptors: [sortDescriptor]) { _, results, error in
+            guard let sample = results?.first as? HKQuantitySample else {
+                DispatchQueue.main.async {
+                    if self.currentHRV == 0.0 {
+                        self.currentHRV = 65.0 // ms (realistic fallback)
+                    }
+                }
+                return
+            }
+            let hrvValue = sample.quantity.doubleValue(for: HKUnit(from: "ms"))
+            
+            DispatchQueue.main.async {
+                self.currentHRV = round(hrvValue)
+            }
+        }
+        healthStore.execute(query)
+    }
+    
+    private func fetchRestingHR() {
+        guard let restingType = HKQuantityType.quantityType(forIdentifier: .restingHeartRate) else {
+            DispatchQueue.main.async { if self.restingHR == 0.0 { self.restingHR = 62.0 } }
+            return
+        }
+        
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(sampleType: restingType, predicate: nil, limit: 1, sortDescriptors: [sortDescriptor]) { _, results, error in
+            guard let sample = results?.first as? HKQuantitySample else {
+                DispatchQueue.main.async {
+                    if self.restingHR == 0.0 {
+                        self.restingHR = 62.0 // bpm (realistic fallback)
+                    }
+                }
+                return
+            }
+            let rhrValue = sample.quantity.doubleValue(for: HKUnit(from: "count/min"))
+            
+            DispatchQueue.main.async {
+                self.restingHR = round(rhrValue)
+            }
+        }
+        healthStore.execute(query)
+    }
+ 
+    private func fetchLatestOxygenSaturation() {
+        guard let o2Type = HKQuantityType.quantityType(forIdentifier: .oxygenSaturation) else {
+            DispatchQueue.main.async { if self.svO2 == 0.0 { self.svO2 = 98.0 } }
+            return
+        }
+        
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(sampleType: o2Type, predicate: nil, limit: 1, sortDescriptors: [sortDescriptor]) { _, results, error in
+            guard let sample = results?.first as? HKQuantitySample else {
+                DispatchQueue.main.async {
+                    if self.svO2 == 0.0 {
+                        self.svO2 = 98.0 // % (realistic fallback)
+                    }
+                }
+                return
+            }
+            // Oxygen Saturation is represented as % (0.0 to 1.0)
+            let o2Value = sample.quantity.doubleValue(for: HKUnit.percent()) * 100.0
+            
+            DispatchQueue.main.async {
+                self.svO2 = round(o2Value)
+            }
+        }
+        healthStore.execute(query)
+    }
+ 
+    private func fetchLatestVO2Max() {
+        guard let vo2Type = HKQuantityType.quantityType(forIdentifier: .vo2Max) else {
+            DispatchQueue.main.async { if self.vo2Max == 0.0 { self.vo2Max = 48.2 } }
+            return
+        }
+        
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(sampleType: vo2Type, predicate: nil, limit: 1, sortDescriptors: [sortDescriptor]) { _, results, error in
+            guard let sample = results?.first as? HKQuantitySample else {
+                DispatchQueue.main.async {
+                    if self.vo2Max == 0.0 {
+                        self.vo2Max = 48.2 // ml/kg/min (realistic fallback)
+                    }
+                }
+                return
+            }
+            let unit = HKUnit(from: "ml/kg*min")
+            let vo2Value = sample.quantity.doubleValue(for: unit)
+            
+            DispatchQueue.main.async {
+                self.vo2Max = (vo2Value * 10).rounded() / 10
+            }
+        }
+        healthStore.execute(query)
+    }
+ 
+    private func fetchHeartRateRecovery() {
+        guard let hrrType = HKQuantityType.quantityType(forIdentifier: .heartRateRecoveryOneMinute) else {
+            DispatchQueue.main.async { if self.heartRateRecovery == 0.0 { self.heartRateRecovery = 32.0 } }
+            return
+        }
+        
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(sampleType: hrrType, predicate: nil, limit: 1, sortDescriptors: [sortDescriptor]) { _, results, error in
+            guard let sample = results?.first as? HKQuantitySample else {
+                DispatchQueue.main.async {
+                    if self.heartRateRecovery == 0.0 {
+                        self.heartRateRecovery = 32.0 // bpm drop (realistic fallback)
+                    }
+                }
+                return
+            }
+            let hrrValue = sample.quantity.doubleValue(for: HKUnit(from: "count/min"))
+            
+            DispatchQueue.main.async {
+                self.heartRateRecovery = round(hrrValue)
+            }
+        }
+        healthStore.execute(query)
+    }
+    
+    private func fetchSleepDuration() {
+        guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
+            DispatchQueue.main.async { if self.sleepHoursLastNight == 0.0 { self.sleepHoursLastNight = 7.4 } }
+            return
+        }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfDay = calendar.startOfDay(for: now)
+        guard let yesterday = calendar.date(byAdding: .day, value: -1, to: startOfDay) else { return }
+        
+        let predicate = HKQuery.predicateForSamples(withStart: yesterday, end: now, options: .strictStartDate)
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        
+        let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: 100, sortDescriptors: [sortDescriptor]) { _, results, error in
+            guard let sleepResults = results as? [HKCategorySample], !sleepResults.isEmpty else {
+                DispatchQueue.main.async {
+                    if self.sleepHoursLastNight == 0.0 {
+                        self.sleepHoursLastNight = 7.4 // hrs (realistic fallback)
+                    }
+                }
+                return
+            }
+            
+            let totalAsleepTime = sleepResults
+                .filter { sample in
+                    let val = sample.value
+                    // 1: asleep/asleepUnspecified, 3: asleepDeep, 4: asleepREM, 5: asleepCore
+                    return val == 1 || val == 3 || val == 4 || val == 5
+                }
+                .reduce(0.0) { sum, sample in
+                    sum + sample.endDate.timeIntervalSince(sample.startDate)
+                }
+                
+            let hours = totalAsleepTime / 3600.0
+            DispatchQueue.main.async {
+                if hours > 0 {
+                    self.sleepHoursLastNight = (hours * 10).rounded() / 10
+                } else if self.sleepHoursLastNight == 0.0 {
+                    self.sleepHoursLastNight = 7.4 // hrs fallback
+                }
+            }
+        }
+        healthStore.execute(query)
+    }
+}
+
+// MARK: - Phase 1: additional metric fetchers, demographics, baselines, engine reports
+
+extension HealthKitManager {
+
+    // ------------------------------------------------------------------
+    // Demographics (age + biological sex) for age-adjusted longevity norms.
+    // ------------------------------------------------------------------
+    func fetchDemographics() {
+        // Biological sex
+        if let sex = try? healthStore.biologicalSex().biologicalSex {
+            DispatchQueue.main.async {
+                switch sex {
+                case .male:   self.userSex = .male
+                case .female: self.userSex = .female
+                default:      self.userSex = .other
+                }
+            }
+        }
+        // Age from date of birth
+        if let dob = try? healthStore.dateOfBirthComponents(),
+           let birthDate = Calendar.current.date(from: dob) {
+            let years = Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year
+            if let years = years, years > 0, years < 120 {
+                DispatchQueue.main.async { self.userAge = years }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Latest-value fetchers for the new biomarkers.
+    // ------------------------------------------------------------------
+    func fetchDailySteps() {
+        guard let type = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
+            DispatchQueue.main.async { if self.dailySteps == 0 { self.dailySteps = 8200 } }
+            return
+        }
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: Date())
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: Date(), options: .strictStartDate)
+        let query = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, stats, _ in
+            let steps = stats?.sumQuantity()?.doubleValue(for: HKUnit.count()) ?? 0
+            DispatchQueue.main.async {
+                self.dailySteps = steps > 0 ? steps : (self.dailySteps == 0 ? 8200 : self.dailySteps)
+            }
+        }
+        healthStore.execute(query)
+    }
+
+    func fetchExerciseMinutes() {
+        guard let type = HKQuantityType.quantityType(forIdentifier: .appleExerciseTime) else {
+            DispatchQueue.main.async { if self.exerciseMinutes == 0 { self.exerciseMinutes = 34 } }
+            return
+        }
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: Date())
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: Date(), options: .strictStartDate)
+        let query = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, stats, _ in
+            let mins = stats?.sumQuantity()?.doubleValue(for: HKUnit.minute()) ?? 0
+            DispatchQueue.main.async {
+                self.exerciseMinutes = mins > 0 ? mins : (self.exerciseMinutes == 0 ? 34 : self.exerciseMinutes)
+            }
+        }
+        healthStore.execute(query)
+    }
+
+    func fetchWalkingSpeed() {
+        guard let type = HKQuantityType.quantityType(forIdentifier: .walkingSpeed) else {
+            DispatchQueue.main.async { if self.walkingSpeed == 0 { self.walkingSpeed = 1.28 } }
+            return
+        }
+        let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(sampleType: type, predicate: nil, limit: 1, sortDescriptors: [sort]) { _, results, _ in
+            guard let sample = results?.first as? HKQuantitySample else {
+                DispatchQueue.main.async { if self.walkingSpeed == 0 { self.walkingSpeed = 1.28 } }
+                return
+            }
+            let mps = sample.quantity.doubleValue(for: HKUnit.meter().unitDivided(by: HKUnit.second()))
+            DispatchQueue.main.async { self.walkingSpeed = (mps * 100).rounded() / 100 }
+        }
+        healthStore.execute(query)
+    }
+
+    func fetchRespiratoryRate() {
+        guard let type = HKQuantityType.quantityType(forIdentifier: .respiratoryRate) else {
+            DispatchQueue.main.async { if self.respiratoryRate == 0 { self.respiratoryRate = 14.5 } }
+            return
+        }
+        let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(sampleType: type, predicate: nil, limit: 1, sortDescriptors: [sort]) { _, results, _ in
+            guard let sample = results?.first as? HKQuantitySample else {
+                DispatchQueue.main.async { if self.respiratoryRate == 0 { self.respiratoryRate = 14.5 } }
+                return
+            }
+            let rr = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: HKUnit.minute()))
+            DispatchQueue.main.async { self.respiratoryRate = (rr * 10).rounded() / 10 }
+        }
+        healthStore.execute(query)
+    }
+
+    // ------------------------------------------------------------------
+    // Engine report computation.
+    //
+    // Strategy: compute immediately from the latest @Published values using a
+    // single-element (neutral) baseline so the UI always renders, THEN kick off
+    // historical daily-series queries that recompute with real 14-/21-day
+    // baselines for higher fidelity. If history is empty, the neutral baseline
+    // stands (drift contribution → 0, score reflects age-norms only).
+    // ------------------------------------------------------------------
+    func computeEngineReports() {
+        computeReportsWithBaselines(longevityBaselines: [:], recoveryBaselines: [:])
+        if HKHealthStore.isHealthDataAvailable() {
+            refreshBaselinesAndRecompute()
+        }
+    }
+
+    private func computeReportsWithBaselines(longevityBaselines: [String: [Double]],
+                                             recoveryBaselines: [String: [Double]]) {
+        // --- Longevity ---
+        var lInputs = LongevityInputs(age: userAge, sex: userSex)
+        func lBio(_ key: String, _ latest: Double) -> BiomarkerInput {
+            if let base = longevityBaselines[key], base.count > 1 {
+                let recent = Array(base.suffix(7))
+                return BiomarkerInput(recentValues: recent, baselineValues: base)
+            }
+            return BiomarkerInput(latest: latest)
+        }
+        if vo2Max > 0 { lInputs.vo2Max = lBio("vo2Max", vo2Max) }
+        if currentHRV > 0 { lInputs.hrvSDNN = lBio("hrvSDNN", currentHRV) }
+        if restingHR > 0 { lInputs.restingHR = lBio("restingHR", restingHR) }
+        if sleepHoursLastNight > 0 { lInputs.sleepHours = lBio("sleepHours", sleepHoursLastNight) }
+        if heartRateRecovery > 0 { lInputs.heartRateRecovery = lBio("heartRateRecovery", heartRateRecovery) }
+        if walkingSpeed > 0 { lInputs.walkingSpeed = lBio("walkingSpeed", walkingSpeed) }
+        if dailySteps > 0 { lInputs.steps = lBio("steps", dailySteps) }
+        if exerciseMinutes > 0 { lInputs.exerciseMinutes = lBio("exerciseMinutes", exerciseMinutes) }
+
+        let lReport = LongevityEngine().computeReport(from: lInputs)
+
+        // --- Recovery ---
+        var rInputs = RecoveryInputs()
+        func rMetric(_ key: String, _ today: Double) -> RecoveryMetricInput {
+            if let base = recoveryBaselines[key], base.count > 1 {
+                return RecoveryMetricInput(today: today, baseline: base)
+            }
+            return RecoveryMetricInput(latest: today)
+        }
+        if currentHRV > 0 { rInputs.hrv = rMetric("hrv", currentHRV) }
+        if sleepHoursLastNight > 0 { rInputs.sleepHours = rMetric("sleep", sleepHoursLastNight) }
+        if restingHR > 0 { rInputs.restingHR = rMetric("rhr", restingHR) }
+        if respiratoryRate > 0 { rInputs.respiratoryRate = rMetric("rr", respiratoryRate) }
+
+        let rReport = RecoveryEngine().computeReport(from: rInputs)
+
+        DispatchQueue.main.async {
+            self.longevityReport = lReport
+            self.recoveryReport = rReport
+            // Phase 2: recompute Fitness Score and refresh the narrative insight
+            // now that longevity/recovery reports are available.
+            self.refreshFitnessScore()
+            self.refreshNarrative()
+        }
+    }
+
+    // Gathers real daily-series baselines via HKStatisticsCollectionQuery and
+    // recomputes both reports once all series have returned.
+    private func refreshBaselinesAndRecompute() {
+        let group = DispatchGroup()
+        var series: [String: [Double]] = [:]
+        let lock = NSLock()
+
+        func store(_ key: String, _ values: [Double]) {
+            lock.lock(); series[key] = values; lock.unlock()
+        }
+
+        // (identifier, key, unit, statistics option, days)
+        let discreteAvg = HKStatisticsOptions.discreteAverage
+        let cumSum = HKStatisticsOptions.cumulativeSum
+
+        func addSeries(_ id: HKQuantityTypeIdentifier, _ key: String, _ unit: HKUnit, _ opt: HKStatisticsOptions, days: Int) {
+            guard let type = HKQuantityType.quantityType(forIdentifier: id) else { return }
+            group.enter()
+            dailySeries(type: type, unit: unit, option: opt, days: days) { values in
+                store(key, values)
+                group.leave()
+            }
+        }
+
+        // Longevity baselines: 21 days.
+        addSeries(.vo2Max, "vo2Max", HKUnit(from: "ml/kg*min"), discreteAvg, days: 21)
+        addSeries(.heartRateVariabilitySDNN, "hrvSDNN", HKUnit(from: "ms"), discreteAvg, days: 21)
+        addSeries(.restingHeartRate, "restingHR", HKUnit(from: "count/min"), discreteAvg, days: 21)
+        addSeries(.walkingSpeed, "walkingSpeed", HKUnit.meter().unitDivided(by: .second()), discreteAvg, days: 21)
+        addSeries(.stepCount, "steps", HKUnit.count(), cumSum, days: 21)
+        addSeries(.appleExerciseTime, "exerciseMinutes", HKUnit.minute(), cumSum, days: 21)
+        addSeries(.heartRateRecoveryOneMinute, "heartRateRecovery", HKUnit(from: "count/min"), discreteAvg, days: 21)
+        // Recovery baseline: respiratory rate (14 days).
+        addSeries(.respiratoryRate, "rr", HKUnit.count().unitDivided(by: .minute()), discreteAvg, days: 14)
+
+        // Sleep daily series (21 days) requires a category-sample aggregation.
+        group.enter()
+        sleepDailySeries(days: 21) { values in
+            store("sleepHours", values)
+            group.leave()
+        }
+
+        group.notify(queue: .main) { [weak self] in
+            guard let self = self else { return }
+            // Longevity uses the full 21-day arrays as baseline; recent = last 7.
+            var longevity: [String: [Double]] = [:]
+            for k in ["vo2Max", "hrvSDNN", "restingHR", "walkingSpeed", "steps", "exerciseMinutes", "heartRateRecovery", "sleepHours"] {
+                if let v = series[k], !v.isEmpty { longevity[k] = v }
+            }
+            // Recovery baselines (14 days) for HRV/sleep/RHR/RR — reuse trailing 14.
+            var recovery: [String: [Double]] = [:]
+            recovery["hrv"] = Array((series["hrvSDNN"] ?? []).suffix(14))
+            recovery["sleep"] = Array((series["sleepHours"] ?? []).suffix(14))
+            recovery["rhr"] = Array((series["restingHR"] ?? []).suffix(14))
+            recovery["rr"] = series["rr"] ?? []
+            self.computeReportsWithBaselines(longevityBaselines: longevity, recoveryBaselines: recovery)
+        }
+    }
+
+    // Generic daily-aggregate series over the trailing `days` days.
+    private func dailySeries(type: HKQuantityType, unit: HKUnit, option: HKStatisticsOptions, days: Int,
+                             completion: @escaping ([Double]) -> Void) {
+        let cal = Calendar.current
+        let anchor = cal.startOfDay(for: Date())
+        guard let start = cal.date(byAdding: .day, value: -days, to: anchor) else {
+            completion([]); return
+        }
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: Date(), options: .strictStartDate)
+        var interval = DateComponents(); interval.day = 1
+
+        let query = HKStatisticsCollectionQuery(quantityType: type,
+                                                quantitySamplePredicate: predicate,
+                                                options: option,
+                                                anchorDate: anchor,
+                                                intervalComponents: interval)
+        query.initialResultsHandler = { _, results, _ in
+            var values: [Double] = []
+            results?.enumerateStatistics(from: start, to: Date()) { stat, _ in
+                let q = option.contains(.cumulativeSum) ? stat.sumQuantity() : stat.averageQuantity()
+                if let q = q {
+                    let v = q.doubleValue(for: unit)
+                    if v.isFinite && v > 0 { values.append(v) }
+                }
+            }
+            completion(values)
+        }
+        healthStore.execute(query)
+    }
+
+    // Per-day asleep-hours series over the trailing `days` days.
+    private func sleepDailySeries(days: Int, completion: @escaping ([Double]) -> Void) {
+        guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
+            completion([]); return
+        }
+        let cal = Calendar.current
+        let end = Date()
+        guard let start = cal.date(byAdding: .day, value: -days, to: cal.startOfDay(for: end)) else {
+            completion([]); return
+        }
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
+        let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, results, _ in
+            guard let samples = results as? [HKCategorySample] else { completion([]); return }
+            // Bucket asleep intervals by calendar day of their start date.
+            var perDay: [Date: TimeInterval] = [:]
+            for s in samples {
+                // 1: asleep/asleepUnspecified, 3: asleepDeep, 4: asleepREM, 5: asleepCore
+                let v = s.value
+                guard v == 1 || v == 3 || v == 4 || v == 5 else { continue }
+                let day = cal.startOfDay(for: s.startDate)
+                perDay[day, default: 0] += s.endDate.timeIntervalSince(s.startDate)
+            }
+            let hours = perDay.values.map { $0 / 3600.0 }.filter { $0 > 0 }
+            completion(hours)
+        }
+        healthStore.execute(query)
+    }
+}
+
+// MARK: - Phase 2: Fitness Score (14-day workouts + HR-in-zone) and narrative refresh
+
+extension HealthKitManager {
+
+    private var fitnessWindowDays: Int { 14 }
+    private var maxHRForUser: Double { Double(max(30, 220 - userAge)) }
+
+    /// Rebuilds the Fitness Score from the last 14 days of workouts. Fetches HR
+    /// samples per workout to bucket time-in-zone (zones 1–5); if HR is missing
+    /// the engine estimates intensity from active energy / duration.
+    func refreshFitnessScore() {
+        guard HKHealthStore.isHealthDataAvailable() else {
+            // Demo / mock mode: synthesize a plausible 14-day block so the tile renders.
+            let report = FitnessEngine().computeReport(from: mockFitnessInputs())
+            DispatchQueue.main.async { self.fitnessReport = report }
+            return
+        }
+        let workoutType = HKObjectType.workoutType()
+
+        let cal = Calendar.current
+        let start = cal.date(byAdding: .day, value: -fitnessWindowDays, to: cal.startOfDay(for: Date())) ?? Date()
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: Date(), options: .strictStartDate)
+        let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
+
+        let query = HKSampleQuery(sampleType: workoutType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { [weak self] _, results, _ in
+            guard let self = self else { return }
+            let workouts = (results as? [HKWorkout]) ?? []
+            if workouts.isEmpty {
+                let report = FitnessEngine().computeReport(from: FitnessInputs(windowDays: self.fitnessWindowDays, maxHR: self.maxHRForUser, workouts: []))
+                DispatchQueue.main.async { self.fitnessReport = report }
+                return
+            }
+
+            let zones = HRZones(age: self.userAge)
+            let group = DispatchGroup()
+            var inputs: [WorkoutInput] = []
+            let lock = NSLock()
+
+            for workout in workouts {
+                group.enter()
+                self.timeInZoneSeconds(for: workout, zones: zones) { zoneSeconds in
+                    let durationMin = workout.duration / 60.0
+                    let kcal = workout.totalEnergyBurned?.doubleValue(for: .kilocalorie()) ?? 0
+                    let input = WorkoutInput(
+                        date: workout.startDate,
+                        type: self.workoutTypeName(workout.workoutActivityType),
+                        durationMin: durationMin,
+                        activeEnergyKcal: kcal,
+                        avgHR: nil,
+                        timeInZoneSeconds: zoneSeconds)
+                    lock.lock(); inputs.append(input); lock.unlock()
+                    group.leave()
+                }
+            }
+
+            group.notify(queue: .main) {
+                let report = FitnessEngine().computeReport(from: FitnessInputs(
+                    windowDays: self.fitnessWindowDays,
+                    maxHR: self.maxHRForUser,
+                    workouts: inputs))
+                self.fitnessReport = report
+            }
+        }
+        healthStore.execute(query)
+    }
+
+    /// Buckets a workout's heart-rate samples into zone seconds 1–5. Each sample is
+    /// weighted by the gap to the next sample (approximating dwell time), so the
+    /// totals sum to roughly the workout duration.
+    private func timeInZoneSeconds(for workout: HKWorkout, zones: HRZones,
+                                   completion: @escaping ([Double]) -> Void) {
+        guard let hrType = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
+            completion([Double](repeating: 0, count: 5)); return
+        }
+        let predicate = HKQuery.predicateForObjects(from: workout)
+        let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
+        let query = HKSampleQuery(sampleType: hrType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, results, _ in
+            guard let samples = results as? [HKQuantitySample], !samples.isEmpty else {
+                completion([Double](repeating: 0, count: 5)); return
+            }
+            let unit = HKUnit.count().unitDivided(by: .minute())
+            var zoneSeconds = [Double](repeating: 0, count: 5)
+            for (i, s) in samples.enumerated() {
+                let bpm = s.quantity.doubleValue(for: unit)
+                // Dwell time = gap to next sample (fallback to 3s for the last one).
+                let dwell: Double
+                if i + 1 < samples.count {
+                    dwell = max(1, min(60, samples[i + 1].startDate.timeIntervalSince(s.startDate)))
+                } else {
+                    dwell = 3
+                }
+                let zoneIdx = max(1, min(5, zones.zone(for: bpm))) - 1
+                zoneSeconds[zoneIdx] += dwell
+            }
+            completion(zoneSeconds)
+        }
+        healthStore.execute(query)
+    }
+
+    private func workoutTypeName(_ type: HKWorkoutActivityType) -> String {
+        switch type {
+        case .running:                 return "Running"
+        case .cycling:                 return "Cycling"
+        case .walking:                 return "Walking"
+        case .swimming:                return "Swimming"
+        case .hiking:                  return "Hiking"
+        case .rowing:                  return "Rowing"
+        case .elliptical:              return "Elliptical"
+        case .highIntensityIntervalTraining: return "HIIT"
+        case .traditionalStrengthTraining:   return "Traditional Strength"
+        case .functionalStrengthTraining:    return "Functional Strength"
+        case .coreTraining:            return "Core Training"
+        case .yoga:                    return "Yoga"
+        default:                       return "Workout"
+        }
+    }
+
+    /// Synthetic 14-day workout block for demo / no-HealthKit mode.
+    private func mockFitnessInputs() -> FitnessInputs {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        func day(_ ago: Int) -> Date { cal.date(byAdding: .day, value: -ago, to: today) ?? today }
+        func zones(_ z: [Double]) -> [Double] { z }
+        let workouts: [WorkoutInput] = [
+            WorkoutInput(date: day(1),  type: "Running", durationMin: 42, activeEnergyKcal: 430, avgHR: 152, timeInZoneSeconds: zones([120, 900, 900, 540, 60])),
+            WorkoutInput(date: day(3),  type: "Traditional Strength", durationMin: 50, activeEnergyKcal: 300, avgHR: 118, timeInZoneSeconds: zones([600, 1500, 600, 180, 0])),
+            WorkoutInput(date: day(5),  type: "Cycling", durationMin: 65, activeEnergyKcal: 560, avgHR: 138, timeInZoneSeconds: zones([300, 1800, 1500, 300, 0])),
+            WorkoutInput(date: day(7),  type: "Running", durationMin: 35, activeEnergyKcal: 380, avgHR: 160, timeInZoneSeconds: zones([60, 420, 780, 720, 120])),
+            WorkoutInput(date: day(9),  type: "Walking", durationMin: 40, activeEnergyKcal: 160, avgHR: 102, timeInZoneSeconds: zones([1800, 600, 0, 0, 0])),
+            WorkoutInput(date: day(11), type: "Functional Strength", durationMin: 45, activeEnergyKcal: 280, avgHR: 120, timeInZoneSeconds: zones([540, 1350, 540, 270, 0])),
+            WorkoutInput(date: day(13), type: "Cycling", durationMin: 70, activeEnergyKcal: 600, avgHR: 140, timeInZoneSeconds: zones([300, 2100, 1500, 300, 0]))
+        ]
+        return FitnessInputs(windowDays: fitnessWindowDays, maxHR: maxHRForUser, workouts: workouts)
+    }
+
+    /// Regenerates the narrative insight (Apple Intelligence → Gemini → template)
+    /// once both reports exist. No-op until `narrativeService` is injected.
+    func refreshNarrative() {
+        guard let service = narrativeService,
+              let longevity = longevityReport,
+              let recovery = recoveryReport else { return }
+        Task { [weak self] in
+            let insight = try? await service.narrative(for: longevity, recovery: recovery)
+            await MainActor.run { self?.narrativeInsight = insight }
+        }
+    }
+}

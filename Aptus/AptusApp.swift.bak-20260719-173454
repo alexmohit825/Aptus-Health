@@ -1,0 +1,22 @@
+//
+//  AptusApp.swift
+//  Aptus
+//
+
+import SwiftUI
+
+@main
+struct AptusApp: App {
+    // Activate the WatchConnectivity bridge as early as possible so the session
+    // is ready before any view needs to send or receive.
+    init() {
+        ConnectivityManager.shared.activate()
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            PhoneDashboardView()
+                .environmentObject(ConnectivityManager.shared)
+        }
+    }
+}
