@@ -1,4 +1,4 @@
-﻿name: Aptus Health TestFlight & App Store Pipeline
+name: Aptus Health TestFlight & App Store Pipeline
 
 on:
   push:
@@ -60,15 +60,11 @@ jobs:
           xcodebuild archive \
             -project Aptus.xcodeproj \
             -scheme Aptus \
+            -destination 'generic/platform=iOS' \
             -configuration Release \
             -archivePath build/archive/Aptus.xcarchive \
-            -destination "generic/platform=iOS" \
-            -allowProvisioningUpdates \
-            -authenticationKeyID 38F6WA87DU \
-            -authenticationKeyIssuerID 73c7355a-beef-4d79-919d-c3d7dec7747a \
-            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_38F6WA87DU.p8 \
-            CURRENT_PROJECT_VERSION=$BUILD_NUM \
-            DEVELOPMENT_TEAM=523MJL63MC
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
 
       - name: 📤 Export & Deliver to App Store Connect via Apple Direct Upload
         run: |
