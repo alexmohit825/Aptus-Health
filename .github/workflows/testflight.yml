@@ -53,6 +53,13 @@ jobs:
             --apiIssuer 73c7355a-beef-4d79-919d-c3d7dec7747a || true
           echo "✓ App Store Connect API Key connection validated"
 
+      - name: 📱 Install Provisioning Profiles
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp profiles/*.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          echo "✓ Provisioning profiles installed:"
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+
       - name: 🚀 Archive Release Candidate for App Store
         run: |
           BUILD_NUM=$(( ${{ github.run_number }} + 20 ))

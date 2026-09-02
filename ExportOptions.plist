@@ -3,13 +3,20 @@
 <plist version="1.0">
 <dict>
     <key>method</key>
-    <string>app-store</string>
+    <string>app-store-connect</string>
     <key>destination</key>
     <string>upload</string>
     <key>signingStyle</key>
     <string>automatic</string>
     <key>teamID</key>
     <string>523MJL63MC</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.robertapolk.Aptus</key>
+        <string>Aptus iOS AppStore Profile</string>
+        <key>com.robertapolk.Aptus.watchkitapp</key>
+        <string>Aptus Watch AppStore Profile</string>
+    </dict>
     <key>stripSwiftSymbols</key>
     <true/>
     <key>uploadSymbols</key>
