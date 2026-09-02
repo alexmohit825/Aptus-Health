@@ -51,10 +51,48 @@ struct OnboardingView: View {
     // MARK: Pages
 
     private var welcome: some View {
-        page(icon: "bolt.heart.fill", tint: .green,
-             title: "Welcome to Aptus",
-             body: "Aptus turns your Apple Watch data into on-device longevity, recovery, and fitness insights — plus recovery-informed live coaching.",
-             footnote: "Informational wellness estimates — not a diagnosis or medical device.")
+        VStack(spacing: 16) {
+            Spacer()
+            Image(systemName: "bolt.heart.fill")
+                .font(.system(size: 56))
+                .foregroundColor(.green)
+            Text("Welcome to Aptus")
+                .font(.largeTitle)
+                .fontWeight(.black)
+                .multilineTextAlignment(.center)
+            
+            Text("Aptus turns your Apple Watch biometric data into on-device longevity, recovery, and fitness insights.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+            
+            // Medicolegal Informed Consent & Safety Agreement
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "shield.lefthalf.filled")
+                        .foregroundColor(.blue)
+                        .font(.footnote)
+                    Text("Safety & Medical Disclaimer")
+                        .font(.footnote)
+                        .fontWeight(.bold)
+                }
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("• Informational wellness & fitness guidance only — not a medical device or diagnosis.")
+                    Text("• No physician-patient relationship is established with the authors or developers.")
+                    Text("• Physical exercise involves inherent cardiovascular risks. Consult your physician before training.")
+                    Text("• If you experience chest pain, shortness of breath, dizziness, or palpitations, stop immediately and call 911.")
+                }
+                .font(.caption2)
+                .foregroundColor(.secondary)
+            }
+            .padding(14)
+            .background(Color(uiColor: .tertiarySystemBackground))
+            .cornerRadius(14)
+            
+            Spacer()
+        }
+        .padding(.horizontal, 24)
     }
 
     private var health: some View {
@@ -85,28 +123,20 @@ struct OnboardingView: View {
     private var controls: some View {
         VStack(spacing: 12) {
             if page == 1 {
-                Button(action: connectHealth) {
-                    primaryLabel(hkManager.isAuthorized ? "Health Connected ✓" : "Connect Apple Health")
+                // Guideline 5.1.1(iv): Directly triggers HealthKit permission dialog without interstitial skip delay
+                Button(action: {
+                    if hkManager.isAuthorized {
+                        advance()
+                    } else {
+                        connectHealth()
+                    }
+                }) {
+                    primaryLabel(hkManager.isAuthorized ? "Continue" : "Connect Apple Health")
                 }
-                .disabled(hkManager.isAuthorized)
-
-                if !hkManager.isAuthorized {
-                    Text("You can also continue without connecting, or manage access anytime in Settings ▸ Health ▸ Data Access.")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+            } else {
+                Button(action: advance) {
+                    primaryLabel(page == 0 ? "I Acknowledge & Agree" : (page < 3 ? "Continue" : "Get Started"))
                 }
-            }
-
-            Button(action: advance) {
-                primaryLabel(page < 3 ? "Continue" : "Get Started")
-            }
-
-            if page < 3 {
-                Button("Skip") { finish() }
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
             }
         }
         .padding()

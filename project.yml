@@ -25,9 +25,9 @@ options:
 
 settings:
   base:
-    DEVELOPMENT_TEAM: ""          # <-- set your Apple Developer Team ID here
+    DEVELOPMENT_TEAM: "523MJL63MC"
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "3"
+    CURRENT_PROJECT_VERSION: "20"
     SWIFT_VERSION: "5.9"
     ENABLE_USER_SCRIPT_SANDBOXING: "NO"
     CODE_SIGN_STYLE: Automatic

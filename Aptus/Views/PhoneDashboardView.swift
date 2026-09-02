@@ -306,6 +306,40 @@ struct PhoneDashboardView: View {
                         Text("Workout suggestions are general fitness guidance, not medical advice. Consult a physician before starting a new exercise program.")
                             .font(.caption2)
                             .foregroundColor(.secondary)
+
+                        // Clinical & Scientific Citations (App Store Guideline 1.4.1)
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "books.vertical.fill")
+                                    .foregroundColor(.blue)
+                                    .font(.caption2)
+                                Text("Clinical & Scientific Citations:")
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primary)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Link("• American Heart Association: Physical Activity Recommendations",
+                                     destination: URL(string: "https://www.heart.org/en/healthy-living/fitness/fitness-basics/aha-recs-for-physical-activity-in-adults")!)
+                                    .font(.caption2)
+                                
+                                Link("• ACSM Guidelines for Exercise Testing & Prescription",
+                                     destination: URL(string: "https://www.acsm.org/education-resources/books/guidelines-exercise-testing-prescription")!)
+                                    .font(.caption2)
+                                
+                                Link("• Heart Rate Variability Norms & Autonomic Recovery (Shaffer et al., 2017)",
+                                     destination: URL(string: "https://pubmed.ncbi.nlm.nih.gov/29034226/")!)
+                                    .font(.caption2)
+                                
+                                Link("• Autonomic Function, Sleep Architecture & Health (Sleep Med Rev, 2019)",
+                                     destination: URL(string: "https://pubmed.ncbi.nlm.nih.gov/30554729/")!)
+                                    .font(.caption2)
+                            }
+                        }
+                        .padding(10)
+                        .background(Color(uiColor: .tertiarySystemBackground))
+                        .cornerRadius(10)
                     }
                     .padding()
                     .background(Color(uiColor: .systemBackground))

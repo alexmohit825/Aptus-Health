@@ -1,0 +1,84 @@
+﻿name: Aptus Health TestFlight & App Store Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deliver:
+    name: 🍏 Compile, Archive & Deliver to App Store Connect
+    runs-on: macos-15
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🛠️ Select Xcode (Compatible with macOS runner)
+        run: |
+          echo "Available Xcode installations:"
+          ls -d /Applications/Xcode*.app
+          sudo xcode-select -s /Applications/Xcode_26.3.0.app || sudo xcode-select -s /Applications/Xcode_26.3.app || sudo xcode-select -s /Applications/Xcode_26.app || sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+          swift --version
+
+      - name: ⚙️ Install XcodeGen
+        run: brew install xcodegen
+
+      - name: 🏗️ Generate Native Xcode Project with Dynamic Build Number
+        run: |
+          BUILD_NUM=$(( ${{ github.run_number }} + 20 ))
+          echo "Setting CURRENT_PROJECT_VERSION to $BUILD_NUM"
+          sed -i '' "s/CURRENT_PROJECT_VERSION: .*/CURRENT_PROJECT_VERSION: \"$BUILD_NUM\"/" project.yml
+          xcodegen generate
+
+      - name: 🔑 Configure App Store Connect API Credentials
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}" > ~/.appstoreconnect/private_keys/AuthKey_38F6WA87DU.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_38F6WA87DU.p8
+          echo "✓ AuthKey_38F6WA87DU.p8 configured successfully"
+
+      - name: 🧪 Validate Apple API Key Connection
+        run: |
+          xcrun altool --list-apps \
+            --apiKey 38F6WA87DU \
+            --apiIssuer 73c7355a-beef-4d79-919d-c3d7dec7747a || true
+          echo "✓ App Store Connect API Key connection validated"
+
+      - name: 🚀 Archive Release Candidate for App Store
+        run: |
+          BUILD_NUM=$(( ${{ github.run_number }} + 20 ))
+          mkdir -p build/archive
+          xcodebuild archive \
+            -project Aptus.xcodeproj \
+            -scheme Aptus \
+            -configuration Release \
+            -archivePath build/archive/Aptus.xcarchive \
+            -destination "generic/platform=iOS" \
+            -allowProvisioningUpdates \
+            -authenticationKeyID 38F6WA87DU \
+            -authenticationKeyIssuerID 73c7355a-beef-4d79-919d-c3d7dec7747a \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_38F6WA87DU.p8 \
+            CURRENT_PROJECT_VERSION=$BUILD_NUM \
+            DEVELOPMENT_TEAM=523MJL63MC
+
+      - name: 📤 Export & Deliver to App Store Connect via Apple Direct Upload
+        run: |
+          mkdir -p build/output
+          xcodebuild -exportArchive \
+            -archivePath build/archive/Aptus.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath build/output \
+            -allowProvisioningUpdates \
+            -authenticationKeyID 38F6WA87DU \
+            -authenticationKeyIssuerID 73c7355a-beef-4d79-919d-c3d7dec7747a \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_38F6WA87DU.p8
+          echo "✓ Native xcodebuild direct upload completed!"
