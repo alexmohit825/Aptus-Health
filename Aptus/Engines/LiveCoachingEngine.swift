@@ -105,12 +105,12 @@ public struct LiveCoachingEngine {
 
         if currentZone < target.low {
             action = .push
-            message = "Push to Zone \(target.low)"
+            message = "Target Zone \(target.low)"
             color = "blue"
         } else if currentZone > target.high {
             if band == .red {
                 action = .rest
-                message = "Recovery day — ease way down"
+                message = "Low recovery — ease effort"
                 color = "red"
             } else {
                 action = .ease
@@ -119,7 +119,7 @@ public struct LiveCoachingEngine {
             }
         } else {
             action = .hold
-            message = band == .green ? "Great intensity — hold it" : "Perfect — hold this effort"
+            message = "In target zone — hold pace"
             color = "green"
         }
 
@@ -137,9 +137,9 @@ public struct LiveCoachingEngine {
     public func planSummary(for band: RecoveryBand) -> String {
         let t = targetZoneRange(for: band)
         switch band {
-        case .green:  return "Recovery is high — you're cleared for hard work in Zones \(t.low)–\(t.high)."
-        case .yellow: return "Moderate recovery — keep it aerobic in Zones \(t.low)–\(t.high)."
-        case .red:    return "Low recovery — keep it easy in Zones \(t.low)–\(t.high). Rest is training too."
+        case .green:  return "Optimal recovery — estimated target effort is Zones \(t.low)–\(t.high)."
+        case .yellow: return "Moderate recovery — estimated target effort is aerobic Zones \(t.low)–\(t.high)."
+        case .red:    return "Low recovery — suggest light activity in Zones \(t.low)–\(t.high). Rest supports recovery."
         }
     }
 }

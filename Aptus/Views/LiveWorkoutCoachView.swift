@@ -225,9 +225,12 @@ struct LiveWorkoutCoachView: View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "exclamationmark.shield")
                 .foregroundColor(.secondary)
-            Text("Coaching cues are fitness guidance based on your estimated recovery — not medical advice.")
-                .font(.footnote)
-                .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Coaching cues are general fitness pacing estimates based on your heart rate — not medical advice.")
+                Text("Always listen to your body. If you experience chest pain, shortness of breath, dizziness, or palpitations, stop immediately and seek emergency medical care.")
+            }
+            .font(.footnote)
+            .foregroundColor(.secondary)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
